@@ -1,0 +1,81 @@
+/**
+ * SwiNOG Events – admin styles.
+ * Targets the post-edit meta boxes registered by Meta_Boxes.
+ */
+
+.stgl-meta-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.stgl-meta-table th,
+.stgl-meta-table td {
+	text-align: left;
+	vertical-align: top;
+	padding: 0.5em 0.5em;
+}
+
+.stgl-meta-table th {
+	width: 12em;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.stgl-meta-table input[type="text"],
+.stgl-meta-table input[type="url"],
+.stgl-meta-table input[type="email"],
+.stgl-meta-table input[type="number"],
+.stgl-meta-table input[type="date"],
+.stgl-meta-table textarea,
+.stgl-meta-table select {
+	width: 100%;
+	max-width: 32em;
+}
+
+.stgl-meta-table textarea {
+	min-height: 5em;
+}
+
+.stgl-meta-table .description {
+	color: #646970;
+	font-size: 12px;
+	margin-top: 0.25em;
+	display: block;
+}
+
+.stgl-attachment {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5em;
+	max-width: 32em;
+}
+
+.stgl-attachment-current {
+	background: #f6f7f7;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 0.5em 0.75em;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5em;
+	font-family: Consolas, Menlo, monospace;
+	font-size: 12px;
+	word-break: break-all;
+}
+
+.stgl-attachment-current a {
+	flex: 1;
+}
+
+.stgl-attachment-current.is-empty {
+	color: #646970;
+	font-style: italic;
+	font-family: inherit;
+}
+
+.stgl-attachment-actions {
+	display: flex;
+	gap: 0.5em;
+	flex-wrap: wrap;
+}
