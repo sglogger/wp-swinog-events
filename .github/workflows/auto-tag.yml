@@ -1,0 +1,53 @@
+name: Auto-tag from plugin version
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - swinog-events.php
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from plugin file
+        id: ver
+        run: |
+          HEADER=$(grep -E '^\s*\*\s*Version:' swinog-events.php | head -n1 | awk -F: '{print $2}' | xargs)
+          CONST=$(grep -E "define\(\s*'STGL_SWINOG_VERSION'" swinog-events.php | sed -E "s/.*'([0-9.]+)'.*/\1/")
+          if [ -z "$HEADER" ]; then
+            echo "::error::Could not find Version header in swinog-events.php"
+            exit 1
+          fi
+          if [ "$HEADER" != "$CONST" ]; then
+            echo "::error::Version header ($HEADER) and STGL_SWINOG_VERSION ($CONST) disagree"
+            exit 1
+          fi
+          echo "version=$HEADER" >> "$GITHUB_OUTPUT"
+          echo "tag=v$HEADER"    >> "$GITHUB_OUTPUT"
+
+      - name: Skip if tag already exists
+        id: exists
+        run: |
+          if git rev-parse -q --verify "refs/tags/${{ steps.ver.outputs.tag }}" >/dev/null; then
+            echo "Tag ${{ steps.ver.outputs.tag }} already exists – nothing to do."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create & push tag
+        if: steps.exists.outputs.skip == 'false'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
+          git push origin "${{ steps.ver.outputs.tag }}"
