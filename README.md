@@ -7,7 +7,7 @@ pages that embed the agenda / presentation / sponsor shortcodes; events
 themselves are organised via the `stgl_presentation_cat` taxonomy (one term
 per SwiNOG, e.g. `swinog-41`).
 
-* **Version:** 1.0.0
+* **Version:** 1.0.2
 * **Requires WordPress:** 6.0+
 * **Requires PHP:** 7.4+
 * **License:** GPL-2.0-or-later
@@ -98,8 +98,45 @@ These are **additive** – they default to empty for legacy posts.
 
 ## Settings
 
-**Settings → SwiNOG Events** – add, rename or remove sponsor tiers.
+**Presentations → Settings** – add, rename or remove sponsor tiers, and find
+the full shortcode help (attribute reference + worked examples).
 Existing tiers are preserved.
+
+## Updates
+
+This plugin is not on the WordPress.org directory; updates are delivered from
+GitHub releases via [Git Updater](https://git-updater.com/).
+
+### One-time setup on each WordPress site
+
+1. Install and activate the **Git Updater** plugin (download the latest ZIP
+   from <https://github.com/afragen/git-updater/releases> and upload via
+   *Plugins → Add New → Upload Plugin*).
+2. Git Updater discovers SwiNOG Events automatically thanks to the
+   `GitHub Plugin URI: sglogger/wp-swinog-events` header in
+   `swinog-events.php`. New tagged releases appear under
+   *Dashboard → Updates*.
+3. (Optional) Tick **Enable auto-updates** next to the plugin in
+   *Plugins → Installed Plugins* to apply updates in the background.
+
+### Releasing a new version (maintainer)
+
+The repo ships a GitHub Actions workflow at
+[`.github/workflows/release.yml`](.github/workflows/release.yml) that builds a
+clean ZIP and attaches it to the GitHub release whenever a `v*` tag is pushed.
+
+```sh
+# 1. Bump the version in two places:
+#    - swinog-events.php  →  Version:           1.0.2
+#    - swinog-events.php  →  define('STGL_SWINOG_VERSION', '1.0.2');
+# 2. Commit, tag, push:
+git commit -am "release v1.0.2"
+git tag v1.0.2
+git push origin main --tags
+```
+
+The workflow fails fast if the tag, the `Version:` header and the
+`STGL_SWINOG_VERSION` constant are out of sync, so a typo never ships.
 
 ## Development
 
