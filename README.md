@@ -7,7 +7,7 @@ pages that embed the agenda / presentation / sponsor shortcodes; events
 themselves are organised via the `stgl_presentation_cat` taxonomy (one term
 per SwiNOG, e.g. `swinog-41`).
 
-* **Version:** 1.0.3
+* **Version:** 1.0.5
 * **Requires WordPress:** 6.0+
 * **Requires PHP:** 7.4+
 * **License:** GPL-2.0-or-later
