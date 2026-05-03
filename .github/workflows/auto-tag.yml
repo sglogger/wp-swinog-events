@@ -1,4 +1,4 @@
-name: Auto-tag from plugin version
+name: Auto-tag & release from plugin version
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  tag:
+  tag-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -51,3 +51,34 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a "${{ steps.ver.outputs.tag }}" -m "Release ${{ steps.ver.outputs.tag }}"
           git push origin "${{ steps.ver.outputs.tag }}"
+
+      - name: Build plugin ZIP
+        if: steps.exists.outputs.skip == 'false'
+        run: |
+          SLUG=swinog-events
+          STAGE="$RUNNER_TEMP/$SLUG"
+          mkdir -p "$STAGE"
+          rsync -a --delete \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='.editorconfig' \
+            --exclude='.DS_Store' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='tests' \
+            --exclude='MIGRATION.md' \
+            --exclude='*.zip' \
+            ./ "$STAGE/"
+          cd "$RUNNER_TEMP"
+          zip -r "$GITHUB_WORKSPACE/$SLUG.zip" "$SLUG"
+
+      - name: Create / update GitHub release
+        if: steps.exists.outputs.skip == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          files: swinog-events.zip
+          generate_release_notes: true
+          fail_on_unmatched_files: true
