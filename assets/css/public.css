@@ -13,10 +13,6 @@
 	--stgl-color-border: #dcdcde;
 	--stgl-color-bg-soft: #f6f7f7;
 	--stgl-color-bg-tier: #f0f6fc;
-	--stgl-color-pill-cfp-bg: #fcf0e6;
-	--stgl-color-pill-cfp-fg: #8a3e00;
-	--stgl-color-pill-reg-bg: #edfaef;
-	--stgl-color-pill-reg-fg: #00632c;
 	--stgl-radius: 6px;
 	--stgl-gap: 1rem;
 
@@ -109,12 +105,13 @@
 .stgl-sponsor-tier {
 	background: var(--stgl-color-bg-tier);
 	border-radius: var(--stgl-radius);
-	padding: 1.25rem;
+	padding: 0.25rem;
 }
-
 .stgl-sponsor-tier h3 {
 	margin: 0 0 0.75em;
 	font-size: 1.1rem;
+	font-weight: 600;
+	line-height: 1.3;
 }
 
 .stgl-sponsor-grid {
@@ -163,119 +160,7 @@
 	margin-top: auto;
 }
 
-/* ---------- Event lists & cards ---------- */
-
-.stgl-event-list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
-}
-
-.stgl-event-item {
-	display: grid;
-	grid-template-columns: minmax(8em, auto) 1fr auto;
-	gap: 1rem;
-	align-items: baseline;
-	padding: 0.75rem 1rem;
-	background: var(--stgl-color-bg-soft);
-	border-radius: var(--stgl-radius);
-}
-
-.stgl-event-item .stgl-event-name {
-	font-weight: 600;
-}
-
-.stgl-event-item .stgl-event-loc {
-	color: var(--stgl-color-muted);
-	font-size: 0.9em;
-}
-
-.stgl-event-card,
-.stgl-card {
-	background: #fff;
-	border: 1px solid var(--stgl-color-border);
-	border-radius: var(--stgl-radius);
-	padding: 1.25rem;
-}
-
-.stgl-card-location {
-	color: var(--stgl-color-muted);
-	margin: 0.25em 0 0.75em;
-}
-
-.stgl-card-actions {
-	display: flex;
-	gap: 0.5rem;
-	flex-wrap: wrap;
-	margin-top: 1rem;
-}
-
-/* ---------- Pills (CFP / Registration status) ---------- */
-
-.stgl-pill {
-	display: inline-block;
-	padding: 0.15em 0.65em;
-	border-radius: 999px;
-	font-size: 0.8em;
-	font-weight: 600;
-	letter-spacing: 0.02em;
-	background: var(--stgl-color-bg-soft);
-	color: var(--stgl-color-fg);
-	vertical-align: middle;
-}
-
-.stgl-pill-cfp {
-	background: var(--stgl-color-pill-cfp-bg);
-	color: var(--stgl-color-pill-cfp-fg);
-}
-
-.stgl-pill-reg {
-	background: var(--stgl-color-pill-reg-bg);
-	color: var(--stgl-color-pill-reg-fg);
-}
-
-/* ---------- Buttons & links ---------- */
-
-.stgl-btn {
-	display: inline-block;
-	padding: 0.5em 1em;
-	border-radius: var(--stgl-radius);
-	border: 1px solid var(--stgl-color-border);
-	background: #fff;
-	color: var(--stgl-color-fg);
-	text-decoration: none;
-	font-size: 0.95em;
-	line-height: 1.2;
-	cursor: pointer;
-	transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.stgl-btn:hover,
-.stgl-btn:focus {
-	background: var(--stgl-color-bg-soft);
-	color: var(--stgl-color-accent);
-	border-color: var(--stgl-color-accent);
-}
-
-.stgl-btn-primary {
-	background: var(--stgl-color-accent);
-	border-color: var(--stgl-color-accent);
-	color: #fff;
-}
-
-.stgl-btn-primary:hover,
-.stgl-btn-primary:focus {
-	background: var(--stgl-color-accent-hover);
-	border-color: var(--stgl-color-accent-hover);
-	color: #fff;
-}
-
-.stgl-btn-ical::before {
-	content: "📅 ";
-}
+/* ---------- Link icons ---------- */
 
 .stgl-link-slides::before {
 	content: "📑 ";
@@ -285,36 +170,9 @@
 	content: "🎬 ";
 }
 
-/* ---------- CFP banner ---------- */
-
-.stgl-cfp-banner {
-	background: var(--stgl-color-pill-cfp-bg);
-	border-left: 4px solid var(--stgl-color-pill-cfp-fg);
-	padding: 1rem 1.25rem;
-	border-radius: var(--stgl-radius);
-}
-
-.stgl-cfp-banner h3 {
-	margin: 0 0 0.25em;
-	color: var(--stgl-color-pill-cfp-fg);
-}
-
-.stgl-cfp-banner p {
-	margin: 0 0 0.75em;
-}
-
-.stgl-cfp-banner p:last-child {
-	margin-bottom: 0;
-}
-
 /* ---------- Responsive ---------- */
 
 @media (max-width: 600px) {
-	.stgl-event-item {
-		grid-template-columns: 1fr;
-		gap: 0.25rem;
-	}
-
 	.stgl-table .col-time {
 		width: auto;
 	}
@@ -329,15 +187,9 @@
 	}
 }
 
-/* ---------- Print: hide noisy controls in printed agendas ---------- */
+/* ---------- Print ---------- */
 
 @media print {
-	.stgl-btn,
-	.stgl-card-actions,
-	.stgl-pill {
-		display: none !important;
-	}
-
 	.stgl-block {
 		color: #000;
 	}

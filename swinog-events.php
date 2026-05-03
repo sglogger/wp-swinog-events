@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       SwiNOG Events
- * Plugin URI:        https://www.glogger.ch
- * Description:       Manage SwiNOG events, call-for-papers, agendas, sponsors and presentations. Provides custom post types, shortcodes, REST API, iCal export and JSON-LD structured data.
+ * Plugin URI:        https://github.com/sglogger/wp-swinog-events
+ * Description:       Manage SwiNOG presentations and sponsors. Provides custom post types, taxonomies and shortcodes for embedding agendas, presentation lists and sponsor grids.
  * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      7.4
@@ -12,6 +12,11 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       stgl
  * Domain Path:       /languages
+ *
+ * GitHub Plugin URI: sglogger/wp-swinog-events
+ * Primary Branch:    main
+ * Release Asset:     true
+ * Requires Plugin:   git-updater
  *
  * @package Stgl\SwinogEvents
  */
@@ -26,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // -----------------------------------------------------------------------------
 // Plugin constants
 // -----------------------------------------------------------------------------
-define( 'STGL_SWINOG_VERSION', '1.0.0' );
+define( 'STGL_SWINOG_VERSION', '1.0.1' );
 define( 'STGL_SWINOG_FILE', __FILE__ );
 define( 'STGL_SWINOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'STGL_SWINOG_URL', plugin_dir_url( __FILE__ ) );
@@ -62,9 +67,6 @@ require_once STGL_SWINOG_DIR . 'includes/class-post-types.php';
 require_once STGL_SWINOG_DIR . 'includes/class-meta-boxes.php';
 require_once STGL_SWINOG_DIR . 'includes/class-admin.php';
 require_once STGL_SWINOG_DIR . 'includes/class-shortcodes.php';
-require_once STGL_SWINOG_DIR . 'includes/class-rest-api.php';
-require_once STGL_SWINOG_DIR . 'includes/class-ical.php';
-require_once STGL_SWINOG_DIR . 'includes/class-schema.php';
 require_once STGL_SWINOG_DIR . 'includes/class-assets.php';
 require_once STGL_SWINOG_DIR . 'includes/helpers.php';
 

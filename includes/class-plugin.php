@@ -64,15 +64,6 @@ final class Plugin {
 		$this->components['shortcodes'] = new Shortcodes();
 		$this->components['shortcodes']->register();
 
-		$this->components['rest'] = new REST_API();
-		$this->components['rest']->register();
-
-		$this->components['ical'] = new ICal();
-		$this->components['ical']->register();
-
-		$this->components['schema'] = new Schema();
-		$this->components['schema']->register();
-
 		$this->components['assets'] = new Assets();
 		$this->components['assets']->register();
 

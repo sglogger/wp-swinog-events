@@ -58,15 +58,6 @@ final class Meta_Boxes {
 		);
 
 		add_meta_box(
-			'stgl_event_details',
-			__( 'SwiNOG Event Details', 'stgl' ),
-			[ $this, 'render_event' ],
-			Post_Types::CPT_EVENT,
-			'normal',
-			'high'
-		);
-
-		add_meta_box(
 			'stgl_sponsor_details',
 			__( 'SwiNOG Sponsor Details', 'stgl' ),
 			[ $this, 'render_sponsor' ],
@@ -88,8 +79,6 @@ final class Meta_Boxes {
 			return $title;
 		}
 		switch ( $post->post_type ) {
-			case Post_Types::CPT_EVENT:
-				return __( 'Enter SwiNOG event name (e.g. SwiNOG #99)', 'stgl' );
 			case Post_Types::CPT_SPONSOR:
 				return __( 'Enter company name', 'stgl' );
 			case Post_Types::CPT_PRESENTATION:
@@ -238,78 +227,6 @@ final class Meta_Boxes {
 	}
 
 	/* ------------------------------------------------------------------ */
-	/*  Render – Event                                                    */
-	/* ------------------------------------------------------------------ */
-
-	public function render_event( \WP_Post $post ): void {
-		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
-
-		$m = self::meta( $post->ID );
-		?>
-		<table class="form-table stgl-meta-table">
-			<tbody>
-			<tr>
-				<th><label for="stgl_event_date"><?php esc_html_e( 'Event date', 'stgl' ); ?></label></th>
-				<td>
-					<input type="date" id="stgl_event_date" name="stgl_event_date" value="<?php echo esc_attr( self::normalise_date_for_input( $m['stgl_event_date'] ) ); ?>" />
-					<p class="description"><?php esc_html_e( 'ISO format (yyyy-mm-dd) – legacy dd.mm.yyyy values are auto-converted on display.', 'stgl' ); ?></p>
-				</td>
-			</tr>
-			<tr>
-				<th><label for="stgl_event_end_date"><?php esc_html_e( 'End date (optional)', 'stgl' ); ?></label></th>
-				<td><input type="date" id="stgl_event_end_date" name="stgl_event_end_date" value="<?php echo esc_attr( self::normalise_date_for_input( $m['stgl_event_end_date'] ) ); ?>" /></td>
-			</tr>
-			<tr>
-				<th><label for="stgl_event_location"><?php esc_html_e( 'Location', 'stgl' ); ?></label></th>
-				<td><input type="text" id="stgl_event_location" name="stgl_event_location" value="<?php echo esc_attr( $m['stgl_event_location'] ); ?>" class="regular-text" /></td>
-			</tr>
-			<tr>
-				<th><?php esc_html_e( 'Coordinates (optional)', 'stgl' ); ?></th>
-				<td>
-					<label>
-						<?php esc_html_e( 'Latitude', 'stgl' ); ?>
-						<input type="text" name="stgl_event_venue_lat" value="<?php echo esc_attr( $m['stgl_event_venue_lat'] ); ?>" class="small-text" />
-					</label>
-					&nbsp;
-					<label>
-						<?php esc_html_e( 'Longitude', 'stgl' ); ?>
-						<input type="text" name="stgl_event_venue_lng" value="<?php echo esc_attr( $m['stgl_event_venue_lng'] ); ?>" class="small-text" />
-					</label>
-				</td>
-			</tr>
-			<tr>
-				<th><label for="stgl_event_reg_url"><?php esc_html_e( 'Registration URL', 'stgl' ); ?></label></th>
-				<td><input type="url" id="stgl_event_reg_url" name="stgl_event_reg_url" value="<?php echo esc_attr( $m['stgl_event_reg_url'] ); ?>" class="regular-text" /></td>
-			</tr>
-			<tr>
-				<th><label for="stgl_event_participants_url"><?php esc_html_e( 'Participants list URL', 'stgl' ); ?></label></th>
-				<td><input type="url" id="stgl_event_participants_url" name="stgl_event_participants_url" value="<?php echo esc_attr( $m['stgl_event_participants_url'] ); ?>" class="regular-text" /></td>
-			</tr>
-			<tr>
-				<th><label for="stgl_event_max_seats"><?php esc_html_e( 'Maximum seats', 'stgl' ); ?></label></th>
-				<td><input type="number" min="0" step="1" id="stgl_event_max_seats" name="stgl_event_max_seats" value="<?php echo esc_attr( $m['stgl_event_max_seats'] ); ?>" class="small-text" /></td>
-			</tr>
-			<tr>
-				<th><?php esc_html_e( 'Call for Papers', 'stgl' ); ?></th>
-				<td>
-					<label>
-						<input type="checkbox" name="stgl_event_cfp_open" value="1" <?php checked( ! empty( $m['stgl_event_cfp_open'] ) ); ?> />
-						<?php esc_html_e( 'CFP currently open', 'stgl' ); ?>
-					</label>
-					<input type="hidden" name="stgl_event_cfp_open_present" value="1" />
-					<br />
-					<label style="margin-top:.5em;display:inline-block">
-						<?php esc_html_e( 'CFP submission URL', 'stgl' ); ?><br />
-						<input type="url" name="stgl_event_cfp_url" value="<?php echo esc_attr( $m['stgl_event_cfp_url'] ); ?>" class="regular-text" />
-					</label>
-				</td>
-			</tr>
-			</tbody>
-		</table>
-		<?php
-	}
-
-	/* ------------------------------------------------------------------ */
 	/*  Render – Sponsor                                                  */
 	/* ------------------------------------------------------------------ */
 
@@ -364,7 +281,7 @@ final class Meta_Boxes {
 		}
 
 		// Only act on our post types.
-		$ours = [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_EVENT, Post_Types::CPT_SPONSOR ];
+		$ours = [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ];
 		if ( ! in_array( $post->post_type, $ours, true ) ) {
 			return;
 		}
@@ -383,9 +300,6 @@ final class Meta_Boxes {
 		switch ( $post->post_type ) {
 			case Post_Types::CPT_PRESENTATION:
 				$this->save_presentation( $post_id );
-				break;
-			case Post_Types::CPT_EVENT:
-				$this->save_event( $post_id );
 				break;
 			case Post_Types::CPT_SPONSOR:
 				$this->save_sponsor( $post_id );
@@ -501,43 +415,6 @@ final class Meta_Boxes {
 		] );
 	}
 
-	private function save_event( int $id ): void {
-		$text  = [ 'stgl_event_location' ];
-		$urls  = [ 'stgl_event_reg_url', 'stgl_event_participants_url', 'stgl_event_cfp_url' ];
-		$dates = [ 'stgl_event_date', 'stgl_event_end_date' ];
-
-		foreach ( $text as $k ) {
-			if ( isset( $_POST[ $k ] ) ) {
-				update_post_meta( $id, $k, sanitize_text_field( wp_unslash( $_POST[ $k ] ) ) );
-			}
-		}
-		foreach ( $urls as $k ) {
-			if ( isset( $_POST[ $k ] ) ) {
-				update_post_meta( $id, $k, esc_url_raw( wp_unslash( $_POST[ $k ] ) ) );
-			}
-		}
-		foreach ( $dates as $k ) {
-			if ( isset( $_POST[ $k ] ) ) {
-				$raw = sanitize_text_field( wp_unslash( $_POST[ $k ] ) );
-				update_post_meta( $id, $k, $raw ); // ISO yyyy-mm-dd from <input type="date">
-			}
-		}
-
-		if ( isset( $_POST['stgl_event_max_seats'] ) ) {
-			update_post_meta( $id, 'stgl_event_max_seats', max( 0, (int) $_POST['stgl_event_max_seats'] ) );
-		}
-		if ( isset( $_POST['stgl_event_venue_lat'] ) ) {
-			update_post_meta( $id, 'stgl_event_venue_lat', sanitize_text_field( wp_unslash( $_POST['stgl_event_venue_lat'] ) ) );
-		}
-		if ( isset( $_POST['stgl_event_venue_lng'] ) ) {
-			update_post_meta( $id, 'stgl_event_venue_lng', sanitize_text_field( wp_unslash( $_POST['stgl_event_venue_lng'] ) ) );
-		}
-
-		if ( isset( $_POST['stgl_event_cfp_open_present'] ) ) {
-			update_post_meta( $id, 'stgl_event_cfp_open', empty( $_POST['stgl_event_cfp_open'] ) ? '' : '1' );
-		}
-	}
-
 	private function save_sponsor( int $id ): void {
 		if ( isset( $_POST['stgl_sponsor_url'] ) ) {
 			update_post_meta( $id, 'stgl_sponsor_url', esc_url_raw( wp_unslash( $_POST['stgl_sponsor_url'] ) ) );
@@ -567,11 +444,6 @@ final class Meta_Boxes {
 			'stgl_presenter_videourl', 'stgl_presenter_publish', 'stgl_presenter_publish_video',
 			'stgl_presenter_time', 'stgl_presenter_lenght',
 			'stgl_presenter_bio', 'stgl_presenter_twitter', 'stgl_presenter_linkedin',
-			// Event
-			'stgl_event_date', 'stgl_event_end_date', 'stgl_event_location',
-			'stgl_event_reg_url', 'stgl_event_participants_url',
-			'stgl_event_cfp_open', 'stgl_event_cfp_url',
-			'stgl_event_max_seats', 'stgl_event_venue_lat', 'stgl_event_venue_lng',
 			// Sponsor
 			'stgl_sponsor_url', 'stgl_sponsor_notes', 'stgl_sponsor_level',
 		];
@@ -581,27 +453,5 @@ final class Meta_Boxes {
 			$out[ $k ] = is_scalar( $v ) ? (string) $v : '';
 		}
 		return $out;
-	}
-
-	/**
-	 * Convert legacy dd.mm.yyyy values into yyyy-mm-dd for <input type="date">.
-	 * If the value is already ISO, return as-is. Empty string returns empty.
-	 */
-	private static function normalise_date_for_input( string $value ): string {
-		$value = trim( $value );
-		if ( '' === $value ) {
-			return '';
-		}
-		// Already ISO?
-		if ( preg_match( '/^\d{4}-\d{2}-\d{2}/', $value ) ) {
-			return substr( $value, 0, 10 );
-		}
-		// dd.mm.yyyy ?
-		if ( preg_match( '/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $value, $m ) ) {
-			return sprintf( '%04d-%02d-%02d', (int) $m[3], (int) $m[2], (int) $m[1] );
-		}
-		// Last resort – try strtotime.
-		$ts = strtotime( $value );
-		return $ts ? gmdate( 'Y-m-d', $ts ) : '';
 	}
 }

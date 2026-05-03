@@ -21,10 +21,6 @@ final class Admin {
 		add_action( 'manage_' . Post_Types::CPT_PRESENTATION . '_posts_custom_column', [ $this, 'render_presentation_column' ], 10, 2 );
 		add_filter( 'manage_edit-' . Post_Types::CPT_PRESENTATION . '_sortable_columns', [ $this, 'sortable_presentation_columns' ] );
 
-		// Event columns.
-		add_filter( 'manage_' . Post_Types::CPT_EVENT . '_posts_columns', [ $this, 'event_columns' ] );
-		add_action( 'manage_' . Post_Types::CPT_EVENT . '_posts_custom_column', [ $this, 'render_event_column' ], 10, 2 );
-
 		// Sponsor columns.
 		add_filter( 'manage_' . Post_Types::CPT_SPONSOR . '_posts_columns', [ $this, 'sponsor_columns' ] );
 		add_action( 'manage_' . Post_Types::CPT_SPONSOR . '_posts_custom_column', [ $this, 'render_sponsor_column' ], 10, 2 );
@@ -79,38 +75,6 @@ final class Admin {
 				break;
 			case 'stgl_presenter_time':
 				echo esc_html( (string) get_post_meta( $post_id, 'stgl_presenter_time', true ) );
-				break;
-		}
-	}
-
-	/* ------------------------------------------------------------------ */
-	/*  Columns – Events                                                  */
-	/* ------------------------------------------------------------------ */
-
-	public function event_columns( array $columns ): array {
-		$date = $columns['date'] ?? null;
-		unset( $columns['date'] );
-		$columns['stgl_event_date']     = __( 'Event date', 'stgl' );
-		$columns['stgl_event_location'] = __( 'Location', 'stgl' );
-		$columns['stgl_event_cfp']      = __( 'CFP', 'stgl' );
-		if ( $date ) {
-			$columns['date'] = $date;
-		}
-		return $columns;
-	}
-
-	public function render_event_column( string $column, int $post_id ): void {
-		switch ( $column ) {
-			case 'stgl_event_date':
-				$d = (string) get_post_meta( $post_id, 'stgl_event_date', true );
-				echo esc_html( Helpers\format_event_date( $d ) );
-				break;
-			case 'stgl_event_location':
-				echo esc_html( (string) get_post_meta( $post_id, 'stgl_event_location', true ) );
-				break;
-			case 'stgl_event_cfp':
-				$open = (bool) get_post_meta( $post_id, 'stgl_event_cfp_open', true );
-				echo $open ? '<strong style="color:#1ea000">' . esc_html__( 'Open', 'stgl' ) . '</strong>' : '<span style="color:#999">—</span>';
 				break;
 		}
 	}
@@ -247,16 +211,86 @@ final class Admin {
 					</tbody>
 				</table>
 
-				<h2 style="margin-top:2em"><?php esc_html_e( 'Endpoints', 'stgl' ); ?></h2>
-				<p>
-					<strong><?php esc_html_e( 'REST events:', 'stgl' ); ?></strong>
-					<code><?php echo esc_html( rest_url( 'swinog/v1/events' ) ); ?></code><br />
-					<strong><?php esc_html_e( 'iCal feed for an event:', 'stgl' ); ?></strong>
-					<code><?php echo esc_html( home_url( '/?stgl_ical=swinog-NN' ) ); ?></code>
-				</p>
-
 				<?php submit_button(); ?>
 			</form>
+
+			<hr style="margin:2.5em 0 1.5em" />
+
+			<h2><?php esc_html_e( 'Shortcodes', 'stgl' ); ?></h2>
+			<p class="description">
+				<?php esc_html_e( 'Use the following shortcodes to embed plugin content in pages or posts. Replace swinog-NN with an event slug (e.g. swinog-89).', 'stgl' ); ?>
+			</p>
+
+			<table class="widefat striped" style="max-width:900px">
+				<thead>
+					<tr>
+						<th style="width:30%"><?php esc_html_e( 'Shortcode', 'stgl' ); ?></th>
+						<th><?php esc_html_e( 'Description', 'stgl' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>[swinog_list_presentations event="swinog-NN"]</code></td>
+						<td><?php esc_html_e( 'Table of presentations with links to slides and video (no time column).', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[swinog_list_agenda event="swinog-NN"]</code></td>
+						<td><?php esc_html_e( 'Agenda view with time slot and talk abstract (no slide/video links).', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[swinog_sponsor event="swinog-NN" layout="tiers"]</code></td>
+						<td><?php esc_html_e( 'Sponsor grid grouped by level. Use layout="list" for a flat grid.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>[stgl_list_presentations event="swinog-NN"]</code></td>
+						<td><?php esc_html_e( 'Legacy alias of swinog_list_presentations (kept for backwards compatibility).', 'stgl' ); ?></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h3 style="margin-top:1.5em"><?php esc_html_e( 'Optional attributes', 'stgl' ); ?></h3>
+			<table class="widefat striped" style="max-width:900px">
+				<thead>
+					<tr>
+						<th style="width:25%"><?php esc_html_e( 'Attribute', 'stgl' ); ?></th>
+						<th><?php esc_html_e( 'Description', 'stgl' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td><code>event</code></td>
+						<td><?php esc_html_e( 'Event taxonomy slug (e.g. swinog-89). Omit to list items across all events.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>orderby</code></td>
+						<td>
+							<?php esc_html_e( 'WP_Query orderby value. Defaults: presentations/agenda use "meta_value"; sponsors use "meta_value_num". Other accepted values include "title", "date", "menu_order".', 'stgl' ); ?>
+						</td>
+					</tr>
+					<tr>
+						<td><code>order</code></td>
+						<td><?php esc_html_e( 'Sort direction: "ASC" or "DESC".', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>meta_key</code></td>
+						<td><?php esc_html_e( 'Meta key used when orderby="meta_value" or "meta_value_num". Defaults: stgl_presenter_time (presentations/agenda), stgl_sponsor_level (sponsors).', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>posts</code></td>
+						<td><?php esc_html_e( 'Limit results. -1 (default) returns all.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>layout</code></td>
+						<td><?php esc_html_e( 'Sponsor shortcode only: "tiers" (grouped by level, default) or "list" (flat grid).', 'stgl' ); ?></td>
+					</tr>
+				</tbody>
+			</table>
+
+			<h3 style="margin-top:1.5em"><?php esc_html_e( 'Examples', 'stgl' ); ?></h3>
+			<p class="description"><?php esc_html_e( 'Agenda sorted by time slot (ascending):', 'stgl' ); ?></p>
+			<p><code>[swinog_list_agenda event="swinog-41" orderby="meta_value" meta_key="stgl_presenter_time" order="ASC"]</code></p>
+			<p class="description"><?php esc_html_e( 'Sponsors sorted by level (highest first):', 'stgl' ); ?></p>
+			<p><code>[swinog_sponsor event="swinog-41" orderby="meta_value_num" meta_key="stgl_sponsor_level" order="DESC"]</code></p>
 		</div>
 		<?php
 	}

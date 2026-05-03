@@ -22,8 +22,6 @@ final class Installer {
 	public const OPTION_VERSION        = 'stgl_swinog_event_version';
 	public const OPTION_DATA_VERSION   = 'stgl_swinog_data_version';
 	public const OPTION_SPONSOR_LEVELS = 'stgl_swinog_sponsor_levels';
-	public const OPTION_EVENT_STATUS   = 'stgl_swinog_event_status';
-	public const OPTION_AGENDA_TYPES   = 'stgl_swinog_agenda_type';
 
 	/**
 	 * Default sponsor levels (preserved from v0.x).
@@ -58,11 +56,6 @@ final class Installer {
 		// Seed options only if they don't already exist – never overwrite.
 		add_option( self::OPTION_VERSION, STGL_SWINOG_VERSION );
 		add_option( self::OPTION_SPONSOR_LEVELS, self::default_sponsor_levels() );
-		add_option( self::OPTION_EVENT_STATUS, [ 'draft', 'published', 'hidden' ] );
-		add_option( self::OPTION_AGENDA_TYPES, [
-			__( 'Text entry',  'stgl' ),
-			__( 'Presentation', 'stgl' ),
-		] );
 
 		// Make sure post types & rewrites exist before flushing.
 		( new Post_Types() )->register();
@@ -145,13 +138,13 @@ final class Installer {
 	public static function uninstall(): void {
 		global $wpdb;
 
-		// Delete options.
+		// Delete options (current + legacy).
 		$options = [
 			self::OPTION_VERSION,
 			self::OPTION_DATA_VERSION,
 			self::OPTION_SPONSOR_LEVELS,
-			self::OPTION_EVENT_STATUS,
-			self::OPTION_AGENDA_TYPES,
+			'stgl_swinog_event_status', // legacy
+			'stgl_swinog_agenda_type',  // legacy
 			'stgl_swinog_event_levels', // legacy
 		];
 		foreach ( $options as $opt ) {

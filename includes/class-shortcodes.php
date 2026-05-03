@@ -2,14 +2,12 @@
 /**
  * Shortcodes – preserves the v0.x shortcode names and attributes.
  *
- *   [swinog_list_presentations event="swinog-NN"]   – agenda / talks
+ *   [swinog_list_presentations event="swinog-NN"]     – presentations with slides/video links (no time column)
+ *   [swinog_list_agenda event="swinog-NN"]          – agenda view with time and talk abstract, no slides/video links
  *   [swinog_sponsor             event="swinog-NN"]  – sponsor grid
  *   [swinog_event               event="swinog-NN"]  – event listing (was buggy in v0.x)
+ *   [stgl_list_presentations event="swinog-NN"]     – legacy alias for backwards compatibility
  *
- * Plus three new shortcodes:
- *
- *   [swinog_event_card slug="swinog-NN"]           – a hero card for an event
- *   [swinog_upcoming_events posts="3"]             – the next N upcoming events
  *   [swinog_cfp]                                   – CFP banner if a CFP is currently open
  *
  * @package Stgl\SwinogEvents
@@ -27,11 +25,9 @@ final class Shortcodes {
 
 	public function register(): void {
 		add_shortcode( 'swinog_list_presentations', [ $this, 'presentations' ] );
-		add_shortcode( 'swinog_sponsor',             [ $this, 'sponsors' ] );
-		add_shortcode( 'swinog_event',               [ $this, 'events' ] );
-		add_shortcode( 'swinog_event_card',          [ $this, 'event_card' ] );
-		add_shortcode( 'swinog_upcoming_events',     [ $this, 'upcoming_events' ] );
-		add_shortcode( 'swinog_cfp',                 [ $this, 'cfp_banner' ] );
+		add_shortcode( 'stgl_list_presentations',   [ $this, 'presentations' ] );
+		add_shortcode( 'swinog_list_agenda',        [ $this, 'agenda' ] );
+		add_shortcode( 'swinog_sponsor',            [ $this, 'sponsors' ] );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -39,13 +35,24 @@ final class Shortcodes {
 	/* ------------------------------------------------------------------ */
 
 	public function presentations( $atts ): string {
+		return $this->render_presentations_table( (array) $atts, __( 'Presentations', 'stgl' ), false, true );
+	}
+
+	public function agenda( $atts ): string {
+		return $this->render_presentations_table( (array) $atts, __( 'Agenda', 'stgl' ), true, false );
+	}
+
+	private function render_presentations_table( array $atts, string $heading, bool $show_time, bool $show_links ): string {
+		if ( '' === (string) ( $atts['event'] ?? '' ) && '' !== (string) ( $atts['cat'] ?? '' ) ) {
+			$atts['event'] = $atts['cat'];
+		}
 		$atts = shortcode_atts( [
 			'event'    => '',
 			'orderby'  => 'meta_value',
 			'order'    => 'ASC',
 			'meta_key' => 'stgl_presenter_time',
 			'posts'    => -1,
-		], (array) $atts, 'swinog_list_presentations' );
+		], $atts, 'swinog_list_presentations' );
 
 		$query = new \WP_Query( [
 			'post_type'              => Post_Types::CPT_PRESENTATION,
@@ -72,53 +79,60 @@ final class Shortcodes {
 
 		?>
 		<section class="stgl-block stgl-presentations">
-			<h2 class="stgl-block-title"><?php echo esc_html( sprintf( __( 'Presentations @ %s', 'stgl' ), $tax_name ) ); ?></h2>
+			<h2 class="stgl-block-title"><?php echo esc_html( sprintf( _x( '%s @ %s', 'presentation title heading', 'stgl' ), $heading, $tax_name ) ); ?></h2>
 
 			<table class="stgl-table stgl-table-presentations">
 				<thead>
 					<tr>
-						<th class="col-time"><?php esc_html_e( 'Time', 'stgl' ); ?></th>
+						<?php if ( $show_time ) : ?>
+							<th class="col-time"><?php esc_html_e( 'Time', 'stgl' ); ?></th>
+						<?php endif; ?>
 						<th><?php esc_html_e( 'Topic', 'stgl' ); ?></th>
 						<th><?php esc_html_e( 'Presenter', 'stgl' ); ?></th>
 						<th><?php esc_html_e( 'Company', 'stgl' ); ?></th>
-						<th class="col-links"><?php esc_html_e( 'Links', 'stgl' ); ?></th>
+						<?php if ( $show_links ) : ?>
+							<th class="col-links"><?php esc_html_e( 'Links', 'stgl' ); ?></th>
+						<?php endif; ?>
 					</tr>
 				</thead>
 				<tbody>
 				<?php
-				while ( $query->have_posts() ) {
-					$query->the_post();
-					$id = get_the_ID();
+			while ( $query->have_posts() ) {
+				$query->the_post();
+				$id = get_the_ID();
 
-					$presenter   = (string) get_post_meta( $id, 'stgl_presenter_name', true );
-					$company     = (string) get_post_meta( $id, 'stgl_presenter_company', true );
-					$time        = (string) get_post_meta( $id, 'stgl_presenter_time', true );
-					$publish     = (bool) get_post_meta( $id, 'stgl_presenter_publish', true );
-					$video_pub   = (bool) get_post_meta( $id, 'stgl_presenter_publish_video', true );
-					$video_url   = (string) get_post_meta( $id, 'stgl_presenter_videourl', true );
-					$attachment  = self::resolve_attachment( $id );
+				$presenter   = (string) get_post_meta( $id, 'stgl_presenter_name', true );
+				$company     = (string) get_post_meta( $id, 'stgl_presenter_company', true );
+				$time        = (string) get_post_meta( $id, 'stgl_presenter_time', true );
+				$publish     = (bool) get_post_meta( $id, 'stgl_presenter_publish', true );
+				$video_pub   = (bool) get_post_meta( $id, 'stgl_presenter_publish_video', true );
+				$video_url   = (string) get_post_meta( $id, 'stgl_presenter_videourl', true );
+				$attachment  = self::resolve_attachment( $id );
 
-					$file_url = ( $publish && $attachment ) ? $attachment : '';
-					?>
-					<tr class="stgl-row">
+				$file_url = ( $publish && $attachment ) ? $attachment : '';
+				?>
+				<tr class="stgl-row">
+					<?php if ( $show_time ) : ?>
 						<td class="col-time"><?php echo esc_html( $time ); ?></td>
-						<td class="col-title">
-							<strong>
-								<?php if ( $file_url ) : ?>
-									<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" rel="noopener"><?php the_title(); ?></a>
-								<?php else : ?>
-									<?php the_title(); ?>
-								<?php endif; ?>
-							</strong>
-							<?php
-							$abstract = wp_trim_words( wp_strip_all_tags( (string) get_the_content() ), 40 );
-							if ( $abstract ) {
-								echo '<br><small class="stgl-abstract">' . esc_html( $abstract ) . '</small>';
-							}
-							?>
-						</td>
-						<td><?php echo esc_html( $presenter ); ?></td>
-						<td><?php echo esc_html( $company ); ?></td>
+					<?php endif; ?>
+					<td class="col-title">
+						<strong>
+							<?php if ( $show_links && $file_url ) : ?>
+								<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" rel="noopener"><?php the_title(); ?></a>
+							<?php else : ?>
+								<?php the_title(); ?>
+							<?php endif; ?>
+						</strong>
+						<?php
+						$abstract = wp_trim_words( wp_strip_all_tags( (string) get_the_content() ), 40 );
+						if ( $abstract ) {
+							echo '<br><small class="stgl-abstract">' . esc_html( $abstract ) . '</small>';
+						}
+						?>
+					</td>
+					<td><?php echo esc_html( $presenter ); ?></td>
+					<td><?php echo esc_html( $company ); ?></td>
+					<?php if ( $show_links ) : ?>
 						<td class="col-links">
 							<?php if ( $file_url ) : ?>
 								<a href="<?php echo esc_url( $file_url ); ?>" target="_blank" rel="noopener" class="stgl-link stgl-link-slides">
@@ -126,18 +140,18 @@ final class Shortcodes {
 								</a>
 							<?php endif; ?>
 							<?php if ( $video_pub && $video_url ) : ?>
-								<a href="<?php echo esc_url( $video_url ); ?>" target="_blank" rel="noopener" class="stgl-link stgl-link-video">
-									<?php esc_html_e( 'Video', 'stgl' ); ?>
-								</a>
+								<?php if ( $file_url ) : ?><br><?php endif; ?>
+								<a href="<?php echo esc_url( $video_url ); ?>" target="_blank" rel="noopener" class="stgl-link stgl-link-video"><?php esc_html_e( 'Video', 'stgl' ); ?></a>
 							<?php endif; ?>
 						</td>
-					</tr>
-					<?php
-				}
-				wp_reset_postdata();
-				?>
-				</tbody>
-			</table>
+					<?php endif; ?>
+				</tr>
+				<?php
+			}
+			wp_reset_postdata();
+			?>
+			</tbody>
+		</table>
 		</section>
 		<?php
 		return (string) ob_get_clean();
@@ -157,12 +171,17 @@ final class Shortcodes {
 			'layout'   => 'tiers', // 'tiers' (grouped) or 'list' (flat)
 		], (array) $atts, 'swinog_sponsor' );
 
+		$primary_dir = 'ASC' === strtoupper( (string) $atts['order'] ) ? 'ASC' : 'DESC';
+		$orderby     = [
+			(string) $atts['orderby'] => $primary_dir,
+			'title'                   => 'ASC',
+		];
+
 		$query = new \WP_Query( [
 			'post_type'              => Post_Types::CPT_SPONSOR,
 			'posts_per_page'         => (int) $atts['posts'],
-			'orderby'                => $atts['orderby'],
+			'orderby'                => $orderby,
 			'meta_key'               => sanitize_key( (string) $atts['meta_key'] ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-			'order'                  => 'ASC' === strtoupper( (string) $atts['order'] ) ? 'ASC' : 'DESC',
 			'no_found_rows'          => true,
 			'update_post_term_cache' => false,
 			'tax_query'              => $this->event_tax_query( (string) $atts['event'] ),
@@ -244,221 +263,6 @@ final class Shortcodes {
 			?>
 		</section>
 		<?php
-		return (string) ob_get_clean();
-	}
-
-	/* ------------------------------------------------------------------ */
-	/*  [swinog_event] – fixed: was rendering "Sponsors of …" in v0.x     */
-	/* ------------------------------------------------------------------ */
-
-	public function events( $atts ): string {
-		$atts = shortcode_atts( [
-			'event'   => '',
-			'orderby' => 'meta_value',
-			'order'   => 'DESC',
-			'posts'   => -1,
-			'show'    => 'all', // all|upcoming|past
-		], (array) $atts, 'swinog_event' );
-
-		$args = [
-			'post_type'              => Post_Types::CPT_EVENT,
-			'posts_per_page'         => (int) $atts['posts'],
-			'orderby'                => $atts['orderby'],
-			'meta_key'               => 'stgl_event_date', // phpcs:ignore
-			'order'                  => 'ASC' === strtoupper( (string) $atts['order'] ) ? 'ASC' : 'DESC',
-			'no_found_rows'          => true,
-			'update_post_term_cache' => false,
-			'tax_query'              => $this->event_tax_query( (string) $atts['event'] ),
-		];
-
-		$today = current_time( 'Y-m-d' );
-		if ( 'upcoming' === $atts['show'] ) {
-			$args['meta_query'] = [ // phpcs:ignore
-				[ 'key' => 'stgl_event_date', 'value' => $today, 'compare' => '>=', 'type' => 'CHAR' ],
-			];
-		} elseif ( 'past' === $atts['show'] ) {
-			$args['meta_query'] = [ // phpcs:ignore
-				[ 'key' => 'stgl_event_date', 'value' => $today, 'compare' => '<', 'type' => 'CHAR' ],
-			];
-		}
-
-		$query = new \WP_Query( $args );
-
-		ob_start();
-
-		if ( ! $query->have_posts() ) {
-			printf( '<p class="stgl-empty">%s</p>', esc_html__( 'No events found.', 'stgl' ) );
-			return (string) ob_get_clean();
-		}
-
-		?>
-		<section class="stgl-block stgl-events">
-			<ul class="stgl-event-list">
-			<?php
-			while ( $query->have_posts() ) {
-				$query->the_post();
-				$id       = get_the_ID();
-				$date     = (string) get_post_meta( $id, 'stgl_event_date', true );
-				$location = (string) get_post_meta( $id, 'stgl_event_location', true );
-				$reg      = (string) get_post_meta( $id, 'stgl_event_reg_url', true );
-				$cfp_open = (bool) get_post_meta( $id, 'stgl_event_cfp_open', true );
-
-				echo '<li class="stgl-event-item">';
-				echo '<time datetime="' . esc_attr( Helpers\to_iso_date( $date ) ) . '">' . esc_html( Helpers\format_event_date( $date ) ) . '</time> ';
-				echo '<a class="stgl-event-name" href="' . esc_url( get_permalink( $id ) ) . '">' . esc_html( get_the_title() ) . '</a>';
-				if ( $location ) {
-					echo ' <span class="stgl-event-loc">— ' . esc_html( $location ) . '</span>';
-				}
-				if ( $cfp_open ) {
-					echo ' <span class="stgl-pill stgl-pill-cfp">' . esc_html__( 'CFP open', 'stgl' ) . '</span>';
-				}
-				if ( $reg ) {
-					echo ' <a class="stgl-pill stgl-pill-reg" href="' . esc_url( $reg ) . '" target="_blank" rel="noopener">' . esc_html__( 'Register', 'stgl' ) . '</a>';
-				}
-				echo '</li>';
-			}
-			wp_reset_postdata();
-			?>
-			</ul>
-		</section>
-		<?php
-		return (string) ob_get_clean();
-	}
-
-	/* ------------------------------------------------------------------ */
-	/*  [swinog_event_card]                                               */
-	/* ------------------------------------------------------------------ */
-
-	public function event_card( $atts ): string {
-		$atts = shortcode_atts( [
-			'slug' => '', // event term slug, e.g. "swinog-37"
-		], (array) $atts, 'swinog_event_card' );
-
-		$slug = (string) $atts['slug'];
-		if ( '' === $slug ) {
-			return '';
-		}
-
-		// Find the event post that has this term.
-		$query = new \WP_Query( [
-			'post_type'      => Post_Types::CPT_EVENT,
-			'posts_per_page' => 1,
-			'no_found_rows'  => true,
-			'tax_query'      => [
-				[ 'taxonomy' => Post_Types::TAX_EVENT, 'field' => 'slug', 'terms' => $slug ],
-			],
-		] );
-
-		if ( ! $query->have_posts() ) {
-			return '';
-		}
-
-		ob_start();
-		while ( $query->have_posts() ) {
-			$query->the_post();
-			$id       = get_the_ID();
-			$date     = (string) get_post_meta( $id, 'stgl_event_date', true );
-			$location = (string) get_post_meta( $id, 'stgl_event_location', true );
-			$reg      = (string) get_post_meta( $id, 'stgl_event_reg_url', true );
-			$cfp_open = (bool) get_post_meta( $id, 'stgl_event_cfp_open', true );
-			$cfp_url  = (string) get_post_meta( $id, 'stgl_event_cfp_url', true );
-			$ical_url = home_url( '/?stgl_ical=' . rawurlencode( $slug ) );
-			?>
-			<aside class="stgl-card stgl-event-card">
-				<header>
-					<h3><?php echo esc_html( get_the_title() ); ?></h3>
-					<time datetime="<?php echo esc_attr( Helpers\to_iso_date( $date ) ); ?>">
-						<?php echo esc_html( Helpers\format_event_date( $date ) ); ?>
-					</time>
-				</header>
-				<?php if ( $location ) : ?>
-					<p class="stgl-card-location">📍 <?php echo esc_html( $location ); ?></p>
-				<?php endif; ?>
-
-				<div class="stgl-card-actions">
-					<?php if ( $reg ) : ?>
-						<a class="stgl-btn stgl-btn-primary" href="<?php echo esc_url( $reg ); ?>" target="_blank" rel="noopener">
-							<?php esc_html_e( 'Register', 'stgl' ); ?>
-						</a>
-					<?php endif; ?>
-					<?php if ( $cfp_open && $cfp_url ) : ?>
-						<a class="stgl-btn" href="<?php echo esc_url( $cfp_url ); ?>" target="_blank" rel="noopener">
-							<?php esc_html_e( 'Submit a talk', 'stgl' ); ?>
-						</a>
-					<?php endif; ?>
-					<a class="stgl-btn stgl-btn-ical" href="<?php echo esc_url( $ical_url ); ?>">
-						<?php esc_html_e( 'Add to calendar', 'stgl' ); ?>
-					</a>
-				</div>
-			</aside>
-			<?php
-		}
-		wp_reset_postdata();
-		return (string) ob_get_clean();
-	}
-
-	/* ------------------------------------------------------------------ */
-	/*  [swinog_upcoming_events]                                          */
-	/* ------------------------------------------------------------------ */
-
-	public function upcoming_events( $atts ): string {
-		$atts = shortcode_atts( [
-			'posts' => 3,
-		], (array) $atts, 'swinog_upcoming_events' );
-
-		return $this->events( [
-			'show'    => 'upcoming',
-			'posts'   => (int) $atts['posts'],
-			'orderby' => 'meta_value',
-			'order'   => 'ASC',
-		] );
-	}
-
-	/* ------------------------------------------------------------------ */
-	/*  [swinog_cfp]                                                      */
-	/* ------------------------------------------------------------------ */
-
-	public function cfp_banner( $atts ): string {
-		$query = new \WP_Query( [
-			'post_type'      => Post_Types::CPT_EVENT,
-			'posts_per_page' => 1,
-			'no_found_rows'  => true,
-			'meta_query'     => [ // phpcs:ignore
-				[ 'key' => 'stgl_event_cfp_open', 'value' => '1', 'compare' => '=' ],
-			],
-			'orderby'        => 'meta_value',
-			'meta_key'       => 'stgl_event_date', // phpcs:ignore
-			'order'          => 'ASC',
-		] );
-
-		if ( ! $query->have_posts() ) {
-			return '';
-		}
-
-		ob_start();
-		while ( $query->have_posts() ) {
-			$query->the_post();
-			$id      = get_the_ID();
-			$cfp_url = (string) get_post_meta( $id, 'stgl_event_cfp_url', true );
-			?>
-			<div class="stgl-cfp-banner">
-				<strong><?php esc_html_e( 'Call for Papers is open!', 'stgl' ); ?></strong>
-				<?php
-				printf(
-					/* translators: %s: event name */
-					esc_html__( 'Submit your talk for %s.', 'stgl' ),
-					'<a href="' . esc_url( get_permalink( $id ) ) . '">' . esc_html( get_the_title() ) . '</a>'
-				);
-				?>
-				<?php if ( $cfp_url ) : ?>
-					<a class="stgl-btn stgl-btn-primary" href="<?php echo esc_url( $cfp_url ); ?>" target="_blank" rel="noopener">
-						<?php esc_html_e( 'Submit a talk', 'stgl' ); ?>
-					</a>
-				<?php endif; ?>
-			</div>
-			<?php
-		}
-		wp_reset_postdata();
 		return (string) ob_get_clean();
 	}
 

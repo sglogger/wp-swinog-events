@@ -19,7 +19,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Post_Types {
 
 	public const CPT_PRESENTATION = 'stgl_presentation';
-	public const CPT_EVENT        = 'stgl_event';
 	public const CPT_SPONSOR      = 'stgl_sponsor';
 	public const TAX_EVENT        = 'stgl_presentation_cat';
 
@@ -28,7 +27,6 @@ final class Post_Types {
 		add_action( 'init', [ $this, 'register_taxonomy' ], 9 ); // Taxonomy first.
 		add_action( 'init', [ $this, 'register_meta' ], 11 );
 		add_filter( 'pre_get_posts', [ $this, 'extend_search' ] );
-		add_filter( 'default_content', [ $this, 'default_event_content' ], 10, 2 );
 	}
 
 	/* -------------------------------------------------------------------- */
@@ -51,22 +49,6 @@ final class Post_Types {
 			'capability_type'     => 'post',
 			'exclude_from_search' => false,
 			'menu_position'       => 25,
-		] );
-
-		// --- EVENTS (under Presentations menu) ----------------------------
-		register_post_type( self::CPT_EVENT, [
-			'labels'              => self::labels( __( 'Event', 'stgl' ), __( 'Events', 'stgl' ), __( 'Events', 'stgl' ) ),
-			'public'              => true,
-			'has_archive'         => true,
-			'show_in_rest'        => true,
-			'rest_base'           => 'swinog-events',
-			'supports'            => [ 'title', 'editor', 'page-attributes', 'thumbnail', 'excerpt', 'revisions', 'custom-fields' ],
-			'taxonomies'          => [ self::TAX_EVENT ],
-			'rewrite'             => [ 'slug' => 'meeting', 'with_front' => false ],
-			'menu_icon'           => 'dashicons-calendar-alt',
-			'capability_type'     => 'post',
-			'exclude_from_search' => false,
-			'show_in_menu'        => 'edit.php?post_type=' . self::CPT_PRESENTATION,
 		] );
 
 		// --- SPONSORS -----------------------------------------------------
@@ -124,7 +106,6 @@ final class Post_Types {
 	public function register_taxonomy(): void {
 		register_taxonomy( self::TAX_EVENT, [
 			self::CPT_PRESENTATION,
-			self::CPT_EVENT,
 			self::CPT_SPONSOR,
 		], [
 			'labels'            => [
@@ -172,22 +153,6 @@ final class Post_Types {
 			$this->register_post_meta_field( self::CPT_PRESENTATION, $key, $type );
 		}
 
-		$event_meta = [
-			'stgl_event_date'        => 'string', // dd.mm.yyyy (legacy) or ISO
-			'stgl_event_location'    => 'string',
-			'stgl_event_reg_url'     => 'string',
-			'stgl_event_end_date'    => 'string', // NEW
-			'stgl_event_cfp_open'    => 'boolean', // NEW
-			'stgl_event_cfp_url'     => 'string',  // NEW
-			'stgl_event_max_seats'   => 'integer', // NEW
-			'stgl_event_participants_url' => 'string', // NEW
-			'stgl_event_venue_lat'   => 'string',  // NEW
-			'stgl_event_venue_lng'   => 'string',  // NEW
-		];
-		foreach ( $event_meta as $key => $type ) {
-			$this->register_post_meta_field( self::CPT_EVENT, $key, $type );
-		}
-
 		$sponsor_meta = [
 			'stgl_sponsor_url'   => 'string',
 			'stgl_sponsor_notes' => 'string',
@@ -216,7 +181,7 @@ final class Post_Types {
 				return static fn( $v ): bool => (bool) $v;
 			case 'string':
 			default:
-				if ( in_array( $key, [ 'stgl_presenter_videourl', 'stgl_event_reg_url', 'stgl_event_cfp_url', 'stgl_event_participants_url', 'stgl_sponsor_url' ], true ) ) {
+				if ( in_array( $key, [ 'stgl_presenter_videourl', 'stgl_sponsor_url' ], true ) ) {
 					return static fn( $v ): string => esc_url_raw( (string) $v );
 				}
 				if ( $key === 'stgl_presenter_bio' || $key === 'stgl_sponsor_notes' ) {
@@ -227,7 +192,7 @@ final class Post_Types {
 	}
 
 	/* -------------------------------------------------------------------- */
-	/*  Search & default content                                            */
+	/*  Search                                                              */
 	/* -------------------------------------------------------------------- */
 
 	/**
@@ -237,23 +202,9 @@ final class Post_Types {
 		if ( $query->is_search() && $query->is_main_query() && ! is_admin() ) {
 			$existing = (array) $query->get( 'post_type' );
 			if ( empty( $existing ) || $existing === [ 'post' ] ) {
-				$query->set( 'post_type', [ 'post', 'page', self::CPT_PRESENTATION, self::CPT_SPONSOR, self::CPT_EVENT ] );
+				$query->set( 'post_type', [ 'post', 'page', self::CPT_PRESENTATION, self::CPT_SPONSOR ] );
 			}
 		}
 		return $query;
-	}
-
-	/**
-	 * Pre-fill new event posts with the standard shortcode block.
-	 *
-	 * @param string $content
-	 * @param \WP_Post $post
-	 */
-	public function default_event_content( $content, $post = null ): string {
-		$post_type = $post instanceof \WP_Post ? $post->post_type : ( $GLOBALS['post_type'] ?? '' );
-		if ( self::CPT_EVENT === $post_type ) {
-			$content = "[swinog_list_presentations event=\"swinog-NN\" orderby=\"stgl_presenter_time\" order=\"ASC\"]\n\n[swinog_sponsor event=\"swinog-NN\" orderby=\"stgl_sponsor_level\" order=\"DESC\"]";
-		}
-		return (string) $content;
 	}
 }

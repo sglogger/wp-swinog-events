@@ -41,10 +41,10 @@ final class Assets {
 	}
 
 	private function should_load_public_assets(): bool {
-		if ( is_singular( [ Post_Types::CPT_EVENT, Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ] ) ) {
+		if ( is_singular( [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ] ) ) {
 			return true;
 		}
-		if ( is_post_type_archive( [ Post_Types::CPT_EVENT, Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ] ) ) {
+		if ( is_post_type_archive( [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ] ) ) {
 			return true;
 		}
 		if ( is_tax( Post_Types::TAX_EVENT ) ) {
@@ -60,7 +60,7 @@ final class Assets {
 	}
 
 	private function content_uses_shortcode( string $content ): bool {
-		foreach ( [ 'swinog_list_presentations', 'swinog_sponsor', 'swinog_event', 'swinog_event_card', 'swinog_upcoming_events', 'swinog_cfp' ] as $sc ) {
+		foreach ( [ 'swinog_list_presentations', 'stgl_list_presentations', 'swinog_list_agenda', 'swinog_sponsor' ] as $sc ) {
 			if ( has_shortcode( $content, $sc ) ) {
 				return true;
 			}
@@ -73,7 +73,7 @@ final class Assets {
 		if ( ! $screen ) {
 			return;
 		}
-		$ours = [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_EVENT, Post_Types::CPT_SPONSOR ];
+		$ours = [ Post_Types::CPT_PRESENTATION, Post_Types::CPT_SPONSOR ];
 		if ( ! in_array( $screen->post_type, $ours, true ) && false === strpos( (string) $screen->id, 'stgl-swinog' ) ) {
 			return;
 		}

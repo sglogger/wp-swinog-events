@@ -1,8 +1,11 @@
 # SwiNOG Events
 
-Manage SwiNOG (Swiss Network Operators Group) events, call-for-papers, agendas,
-sponsors and presentation slides – cleanly, with a modern code base and a
-fully-automatic migration from the legacy `swinog_events` plugin (v0.x).
+Manage SwiNOG (Swiss Network Operators Group) presentations and sponsors –
+cleanly, with a modern code base and a fully-automatic migration from the
+legacy `swinog_events` plugin (v0.x). Event pages live as regular WordPress
+pages that embed the agenda / presentation / sponsor shortcodes; events
+themselves are organised via the `stgl_presentation_cat` taxonomy (one term
+per SwiNOG, e.g. `swinog-41`).
 
 * **Version:** 1.0.0
 * **Requires WordPress:** 6.0+
@@ -24,7 +27,7 @@ the bug-by-bug list. In short:
   the plugin now uses a PSR-style class loader.
 * Sponsor levels can finally be edited from the WordPress admin.
 * The unused `{prefix}swinog_events` table is dropped on upgrade.
-* New shortcodes, REST API, iCal export and JSON-LD structured data.
+* New `[swinog_list_agenda]` shortcode and a legacy `[stgl_list_presentations]` alias.
 
 ## Drop-in upgrade from 0.x
 
@@ -37,10 +40,14 @@ the bug-by-bug list. In short:
     * Drops the empty legacy `{$wpdb->prefix}swinog_events` table.
     * Normalises legacy boolean meta values (`"true"`, `"on"`, `"yes"` → `"1"`).
     * Stores a `stgl_swinog_data_version` flag so it never runs twice.
-4. Visit any presentation / event / sponsor – everything renders, every
-   meta field is preserved, every URL slug stays the same
-   (`/presentations/`, `/meeting/`, `/sponsors/`).
-5. Once you're happy, you can delete the old `swinog_events` directory.
+4. Visit any presentation or sponsor – everything renders, every
+   meta field is preserved, the URL slugs stay the same
+   (`/presentations/`, `/sponsors/`).
+5. The `stgl_event` post type from v0.x is no longer registered – any
+   existing event posts remain in the database (so you don't lose data)
+   but stop appearing in the admin menu. Build event landing pages as
+   regular WP pages and embed the shortcodes below.
+6. Once you're happy, you can delete the old `swinog_events` directory.
 
 > **Backup first.** Even though the migration is non-destructive, a database
 > backup before any plugin swap is always a good idea.
@@ -50,70 +57,39 @@ the bug-by-bug list. In short:
 | Area | v0.x | v1.0 |
 |------|------|------|
 | Post type for talks | `stgl_presentation` | identical |
-| Post type for events | `stgl_event` | identical |
 | Post type for sponsors | `stgl_sponsor` | identical |
 | Taxonomy | `stgl_presentation_cat` | identical |
-| URL slugs | `presentations`, `meeting`, `sponsors` | identical |
+| URL slugs | `presentations`, `sponsors` | identical |
 | All meta keys | preserved (incl. typo `stgl_presenter_lenght`) | identical |
-| Shortcodes | `[swinog_list_presentations]`, `[swinog_sponsor]`, `[swinog_event]` | identical |
+| Shortcodes | `[swinog_list_presentations]`, `[swinog_list_agenda]`, `[swinog_sponsor]` | identical plus a legacy `[stgl_list_presentations]` alias |
 | Sponsor levels option | `stgl_swinog_sponsor_levels` | identical shape, now editable |
+| `stgl_event` post type | registered | **removed** – use a regular WP page with the shortcodes |
 
 ## Shortcodes
 
+Use a regular WordPress page (one per SwiNOG) and embed the shortcodes below.
+Each shortcode filters by the `stgl_presentation_cat` taxonomy slug
+(`event="swinog-NN"`).
+
 | Shortcode | Description |
 |-----------|-------------|
-| `[swinog_list_presentations cat="swinog-37"]` | Renders the agenda table for an event (taxonomy term slug). |
-| `[swinog_sponsor cat="swinog-37"]` | Renders sponsors grouped by tier. |
-| `[swinog_event cat="swinog-37"]` | Renders the event metadata block (location, date, registration). |
-| `[swinog_event_card slug="swinog-37"]` *(new)* | Compact card with date / location / CFP / registration / iCal button. |
-| `[swinog_upcoming_events posts="3"]` *(new)* | Lists upcoming events filtered by `stgl_event_date >= today`. |
-| `[swinog_cfp]` *(new)* | Renders a CFP banner for any event whose `stgl_event_cfp_open` is true. |
+| `[swinog_list_presentations event="swinog-41"]` | Presentations with slides/video links, no time column. |
+| `[stgl_list_presentations event="swinog-41"]` *(legacy)* | Backwards-compatible alias for `[swinog_list_presentations]`. |
+| `[swinog_list_agenda event="swinog-41"]` | Agenda with time slot and talk abstract, no slide/video links. |
+| `[swinog_sponsor event="swinog-41" layout="tiers"]` | Sponsor grid grouped by level (use `layout="list"` for a flat grid). |
 
-## REST API
+Optional attributes accepted by all four: `orderby`, `order`, `meta_key`,
+`posts`. The full attribute reference and worked examples live on the
+**Presentations → Settings** screen.
 
-Namespace: `swinog/v1`
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /wp-json/swinog/v1/events` | List events (`?upcoming=1` to filter). |
-| `GET /wp-json/swinog/v1/events/{slug}` | Single event with metadata. |
-| `GET /wp-json/swinog/v1/events/{slug}/agenda` | Talks for an event, ordered by start time. |
-| `GET /wp-json/swinog/v1/events/{slug}/sponsors` | Sponsors for an event, grouped by tier. |
-
-All custom post types also expose the standard core REST routes
-(`/wp-json/wp/v2/stgl_event`, etc.) because they're registered with
-`show_in_rest`. Custom meta fields are exposed with proper types.
-
-## iCal export
-
-Each event has a stable iCal URL:
-
-```
-https://example.com/?stgl_ical={event-slug}
-```
-
-The output is a UTF-8 ICS file (`text/calendar`) containing one `VEVENT`
-per talk, RFC 5545 line-folded at 73 octets and properly escaped.
-Use it from the `[swinog_event_card]` shortcode or link it directly.
-
-## SEO – Schema.org
-
-When a single `stgl_event` page is rendered, the plugin injects a
-`<script type="application/ld+json">` block following the `Event`
-schema, including `startDate`, `endDate`, `location.name`,
-`organizer` and the registration URL as a `Reservation` action.
+The presentation and sponsor CPTs remain registered with `show_in_rest`,
+so the standard `/wp-json/wp/v2/stgl_presentation` and `/wp-json/wp/v2/stgl_sponsor`
+endpoints are available if you need raw data – custom meta fields are
+exposed with proper types.
 
 ## New meta fields
 
 These are **additive** – they default to empty for legacy posts.
-
-**Events**
-
-* `stgl_event_end_date` – multi-day support.
-* `stgl_event_cfp_open` (bool) + `stgl_event_cfp_url`.
-* `stgl_event_max_seats`.
-* `stgl_event_participants_url`.
-* `stgl_event_venue_lat` / `stgl_event_venue_lng`.
 
 **Presentations**
 
@@ -138,11 +114,8 @@ swinog-events/
 │   ├── class-meta-boxes.php    Edit-screen UI + save handlers
 │   ├── class-admin.php         List columns, settings page
 │   ├── class-shortcodes.php    All public shortcodes
-│   ├── class-rest-api.php      REST namespace + endpoints
-│   ├── class-ical.php          ?stgl_ical=… ICS endpoint
-│   ├── class-schema.php        JSON-LD output
 │   ├── class-assets.php        Conditional CSS/JS enqueue
-│   └── helpers.php             Date utilities + BC global function shims
+│   └── helpers.php             Email validator + BC global function shims
 ├── admin/views/
 ├── public/views/
 ├── assets/
