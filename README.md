@@ -121,22 +121,26 @@ GitHub releases via [Git Updater](https://git-updater.com/).
 
 ### Releasing a new version (maintainer)
 
-The repo ships a GitHub Actions workflow at
-[`.github/workflows/release.yml`](.github/workflows/release.yml) that builds a
-clean ZIP and attaches it to the GitHub release whenever a `v*` tag is pushed.
+The repo ships a single GitHub Actions workflow at
+[`.github/workflows/auto-tag.yml`](.github/workflows/auto-tag.yml) that runs on
+every push to `main` touching `swinog-events.php`. It reads the version from
+the plugin file, creates the matching `vX.Y.Z` tag if it doesn't yet exist,
+builds a clean ZIP and creates/updates the GitHub release.
 
 ```sh
-# 1. Bump the version in two places:
-#    - swinog-events.php  →  Version:           1.0.2
-#    - swinog-events.php  →  define('STGL_SWINOG_VERSION', '1.0.2');
-# 2. Commit, tag, push:
-git commit -am "release v1.0.2"
-git tag v1.0.2
-git push origin main --tags
+# 1. Bump the version in two places (must match):
+#    - swinog-events.php  →  Version:           1.0.4
+#    - swinog-events.php  →  define('STGL_SWINOG_VERSION', '1.0.4');
+# 2. Commit & push – the workflow does the rest.
+git commit -am "release v1.0.4"
+git push origin main
 ```
 
-The workflow fails fast if the tag, the `Version:` header and the
-`STGL_SWINOG_VERSION` constant are out of sync, so a typo never ships.
+The workflow fails fast if the `Version:` header and the
+`STGL_SWINOG_VERSION` constant are out of sync, so a typo never ships. You
+can also re-run the workflow manually from the **Actions** tab
+(`workflow_dispatch`) to rebuild and re-upload the ZIP for the current
+version without bumping it.
 
 ## Development
 
