@@ -242,6 +242,10 @@ final class Admin {
 						<td><?php esc_html_e( 'Sponsor grid grouped by level. Use layout="list" for a flat grid.', 'stgl' ); ?></td>
 					</tr>
 					<tr>
+						<td><code>[swinog_list_all_events]</code></td>
+						<td><?php esc_html_e( 'List all event pages (child pages of the current page). Place on your "Events" parent page to enumerate every SwiNOG.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
 						<td><code>[stgl_list_presentations event="swinog-NN"]</code></td>
 						<td><?php esc_html_e( 'Legacy alias of swinog_list_presentations (kept for backwards compatibility).', 'stgl' ); ?></td>
 					</tr>

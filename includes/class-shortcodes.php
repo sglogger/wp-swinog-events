@@ -9,6 +9,7 @@
  *   [stgl_list_presentations event="swinog-NN"]     – legacy alias for backwards compatibility
  *
  *   [swinog_cfp]                                   – CFP banner if a CFP is currently open
+ *   [swinog_list_all_events]                       – list all event pages (child pages of the current page)
  *
  * @package Stgl\SwinogEvents
  */
@@ -28,6 +29,45 @@ final class Shortcodes {
 		add_shortcode( 'stgl_list_presentations',   [ $this, 'presentations' ] );
 		add_shortcode( 'swinog_list_agenda',        [ $this, 'agenda' ] );
 		add_shortcode( 'swinog_sponsor',            [ $this, 'sponsors' ] );
+		add_shortcode( 'swinog_list_all_events',    [ $this, 'list_all_events' ] );
+		add_shortcode( 'stgl_childpages',    		[ $this, 'list_all_events' ] );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  [swinog_list_all_events] – list child pages of the current (or    */
+	/*  parent) page. Used on event index pages to enumerate per-SwiNOG   */
+	/*  pages.                                                            */
+	/* ------------------------------------------------------------------ */
+
+	public function list_all_events( $atts ): string {
+		$atts = shortcode_atts( [
+			'sort_column' => 'menu_order',
+			'parent'      => 0,
+		], (array) $atts, 'swinog_list_all_events' );
+
+		$parent = (int) $atts['parent'];
+		if ( 0 === $parent ) {
+			$post = get_post();
+			if ( $post instanceof \WP_Post ) {
+				$parent = (int) ( $post->post_parent ?: $post->ID );
+			}
+		}
+		if ( 0 === $parent ) {
+			return '';
+		}
+
+		$children = wp_list_pages( [
+			'sort_column' => sanitize_key( (string) $atts['sort_column'] ),
+			'title_li'    => '',
+			'child_of'    => $parent,
+			'echo'        => 0,
+		] );
+
+		if ( '' === (string) $children ) {
+			return '';
+		}
+
+		return '<ul class="stgl-event-list">' . $children . '</ul>';
 	}
 
 	/* ------------------------------------------------------------------ */

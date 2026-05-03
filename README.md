@@ -77,6 +77,7 @@ Each shortcode filters by the `stgl_presentation_cat` taxonomy slug
 | `[stgl_list_presentations event="swinog-41"]` *(legacy)* | Backwards-compatible alias for `[swinog_list_presentations]`. |
 | `[swinog_list_agenda event="swinog-41"]` | Agenda with time slot and talk abstract, no slide/video links. |
 | `[swinog_sponsor event="swinog-41" layout="tiers"]` | Sponsor grid grouped by level (use `layout="list"` for a flat grid). |
+| `[swinog_list_all_events]` | Lists all event pages — i.e. the child pages of the current page. Drop on the parent "Events" page to auto-enumerate every SwiNOG. Optional `parent="<id>"` to list children of an arbitrary page. |
 
 Optional attributes accepted by all four: `orderby`, `order`, `meta_key`,
 `posts`. The full attribute reference and worked examples live on the
