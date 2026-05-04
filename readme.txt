@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -66,6 +66,18 @@ the Settings page will not be available there.
 
 == Changelog ==
 
+= 1.0.7 =
+* Fixed: editing presentation metadata no longer wipes the linked PDF /
+  slide deck for posts whose file lives in the legacy
+  `wp_custom_attachment` meta. The save handler now only deletes the
+  file reference when the user clicks "Remove file"; an empty picker
+  field means "no change".
+* Improved: presentation/agenda abstracts are no longer truncated to
+  40 words – the full abstract is rendered.
+* Improved: abstract formatting saved in the editor (bold, italic,
+  links, paragraphs, lists, …) is preserved on the agenda and
+  presentations list. Output is sanitised via `wp_kses_post`.
+
 = 1.0.6 =
 * Added `[swinog_list_all_events]` shortcode to list all event pages
   (child pages of the current page) on a parent "Events" landing page.
@@ -116,6 +128,11 @@ the Settings page will not be available there.
 * Removed unused `{prefix}swinog_events` database table.
 
 == Upgrade Notice ==
+
+= 1.0.7 =
+Fixes a regression that wiped legacy PDF/slide links on metadata
+saves, and renders full, formatted abstracts in the agenda/presentation
+shortcodes.
 
 = 1.0.6 =
 Adds `[swinog_list_all_events]` for auto-listing event child pages.
