@@ -164,9 +164,10 @@ final class Shortcodes {
 							<?php endif; ?>
 						</strong>
 						<?php
-						$abstract = trim( wp_strip_all_tags( (string) get_the_content() ) );
-						if ( '' !== $abstract ) {
-							echo '<br><small class="stgl-abstract">' . esc_html( $abstract ) . '</small>';
+						$raw_abstract = trim( (string) get_the_content() );
+						if ( '' !== $raw_abstract ) {
+							$abstract_html = wp_kses_post( apply_filters( 'the_content', $raw_abstract ) );
+							echo '<div class="stgl-abstract">' . $abstract_html . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 						}
 						?>
 					</td>

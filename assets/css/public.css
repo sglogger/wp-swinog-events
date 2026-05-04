@@ -94,6 +94,18 @@
 	margin-top: 0.25em;
 }
 
+.stgl-table-presentations .stgl-abstract > :first-child {
+	margin-top: 0;
+}
+
+.stgl-table-presentations .stgl-abstract > :last-child {
+	margin-bottom: 0;
+}
+
+.stgl-table-presentations .stgl-abstract p {
+	margin: 0.4em 0;
+}
+
 /* ---------- Sponsors ---------- */
 
 .stgl-sponsors {
