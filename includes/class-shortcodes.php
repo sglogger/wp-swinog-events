@@ -164,8 +164,8 @@ final class Shortcodes {
 							<?php endif; ?>
 						</strong>
 						<?php
-						$abstract = wp_trim_words( wp_strip_all_tags( (string) get_the_content() ), 40 );
-						if ( $abstract ) {
+						$abstract = trim( wp_strip_all_tags( (string) get_the_content() ) );
+						if ( '' !== $abstract ) {
 							echo '<br><small class="stgl-abstract">' . esc_html( $abstract ) . '</small>';
 						}
 						?>

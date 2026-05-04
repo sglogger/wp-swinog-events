@@ -3,7 +3,7 @@
  * Plugin Name:       SwiNOG Events
  * Plugin URI:        https://github.com/sglogger/wp-swinog-events
  * Description:       Manage SwiNOG presentations and sponsors. Provides custom post types, taxonomies and shortcodes for embedding agendas, presentation lists and sponsor grids.
- * Version:           1.0.6
+ * Version:           1.0.7
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Steven Glogger
@@ -31,7 +31,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // -----------------------------------------------------------------------------
 // Plugin constants
 // -----------------------------------------------------------------------------
-define( 'STGL_SWINOG_VERSION', '1.0.6' );
+define( 'STGL_SWINOG_VERSION', '1.0.7' );
 define( 'STGL_SWINOG_FILE', __FILE__ );
 define( 'STGL_SWINOG_DIR', plugin_dir_path( __FILE__ ) );
 define( 'STGL_SWINOG_URL', plugin_dir_url( __FILE__ ) );

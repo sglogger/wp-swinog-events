@@ -199,10 +199,11 @@ final class Meta_Boxes {
 		?>
 		<div class="stgl-attachment">
 			<input type="hidden" id="stgl_presentation_attachment_id" name="stgl_presentation_attachment_id" value="<?php echo esc_attr( (string) $attachment_id ); ?>" />
+			<input type="hidden" id="stgl_presentation_attachment_remove" name="stgl_presentation_attachment_remove" value="" />
 
 			<p>
 				<button type="button" class="button" id="stgl-pick-attachment">
-					<?php $attachment_id ? esc_html_e( 'Replace file…', 'stgl' ) : esc_html_e( 'Select / upload file…', 'stgl' ); ?>
+					<?php $file_url ? esc_html_e( 'Replace file…', 'stgl' ) : esc_html_e( 'Select / upload file…', 'stgl' ); ?>
 				</button>
 			</p>
 
@@ -342,8 +343,15 @@ final class Meta_Boxes {
 			update_post_meta( $id, 'stgl_presenter_publish_video', empty( $_POST['stgl_presenter_publish_video'] ) ? '' : '1' );
 		}
 
-		// Modern attachment id (set by the media-library JS picker).
-		if ( isset( $_POST['stgl_presentation_attachment_id'] ) ) {
+		// Attachment handling. The picker hidden field is empty unless the user
+		// actively selected a new file; the explicit *_remove flag is the only
+		// signal that an existing file should be wiped. This preserves legacy
+		// wp_custom_attachment values from v0.x posts that have no modern
+		// Media-Library attachment id.
+		if ( ! empty( $_POST['stgl_presentation_attachment_remove'] ) ) {
+			delete_post_meta( $id, '_stgl_presentation_attachment_id' );
+			delete_post_meta( $id, 'wp_custom_attachment' );
+		} elseif ( isset( $_POST['stgl_presentation_attachment_id'] ) ) {
 			$att_id = (int) $_POST['stgl_presentation_attachment_id'];
 			if ( $att_id > 0 ) {
 				update_post_meta( $id, '_stgl_presentation_attachment_id', $att_id );
@@ -358,9 +366,6 @@ final class Meta_Boxes {
 						'type' => get_post_mime_type( $att_id ) ?: '',
 					] );
 				}
-			} else {
-				delete_post_meta( $id, '_stgl_presentation_attachment_id' );
-				delete_post_meta( $id, 'wp_custom_attachment' );
 			}
 		}
 

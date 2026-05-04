@@ -8,11 +8,12 @@
 	'use strict';
 
 	$( function () {
-		var $hidden  = $( '#stgl_presentation_attachment_id' );
-		var $current = $( '.stgl-attachment-current' );
-		var $link    = $( '#stgl-attachment-link' );
-		var $pick    = $( '#stgl-pick-attachment' );
-		var $remove  = $( '#stgl-attachment-remove' );
+		var $hidden     = $( '#stgl_presentation_attachment_id' );
+		var $removeFlag = $( '#stgl_presentation_attachment_remove' );
+		var $current    = $( '.stgl-attachment-current' );
+		var $link       = $( '#stgl-attachment-link' );
+		var $pick       = $( '#stgl-pick-attachment' );
+		var $remove     = $( '#stgl-attachment-remove' );
 
 		if ( ! $hidden.length || ! $pick.length ) {
 			return;
@@ -50,6 +51,7 @@
 				var attachment = frame.state().get( 'selection' ).first().toJSON();
 
 				$hidden.val( attachment.id );
+				$removeFlag.val( '' );
 
 				var label = attachment.filename || attachment.title || attachment.url;
 				$link.attr( 'href', attachment.url ).text( label );
@@ -62,6 +64,7 @@
 		$remove.on( 'click', function ( e ) {
 			e.preventDefault();
 			$hidden.val( '' );
+			$removeFlag.val( '1' );
 			$link.attr( 'href', '#' ).text( '' );
 			$current.hide();
 		} );
