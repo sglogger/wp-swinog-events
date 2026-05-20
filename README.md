@@ -105,20 +105,21 @@ Existing tiers are preserved.
 
 ## Updates
 
-This plugin is not on the WordPress.org directory; updates are delivered from
-GitHub releases via [Git Updater](https://git-updater.com/).
+This plugin is not on the WordPress.org directory; updates are delivered
+straight from GitHub releases by a built-in updater
+([`includes/class-updater.php`](includes/class-updater.php)). **No helper
+plugin (Git Updater etc.) is required.**
 
 ### One-time setup on each WordPress site
 
-1. Install and activate the **Git Updater** plugin (download the latest ZIP
-   from <https://github.com/afragen/git-updater/releases> and upload via
-   *Plugins → Add New → Upload Plugin*).
-2. Git Updater discovers SwiNOG Events automatically thanks to the
-   `GitHub Plugin URI: sglogger/wp-swinog-events` header in
-   `swinog-events.php`. New tagged releases appear under
-   *Dashboard → Updates*.
-3. (Optional) Tick **Enable auto-updates** next to the plugin in
-   *Plugins → Installed Plugins* to apply updates in the background.
+None. The bundled updater checks
+`github.com/sglogger/wp-swinog-events` for new releases on WordPress's normal
+update schedule, so new tagged versions simply appear under
+*Dashboard → Updates*. (Optional) tick **Enable auto-updates** next to the
+plugin in *Plugins → Installed Plugins* to apply them in the background.
+
+For a private repository, supply a token via the `STGL_SWINOG_GITHUB_TOKEN`
+constant (e.g. in `wp-config.php`) or the `stgl_swinog_github_token` filter.
 
 ### Releasing a new version (maintainer)
 

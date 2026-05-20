@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,13 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.0.8 =
+* Changed: updates are now served by a built-in GitHub Releases updater
+  (`includes/class-updater.php`). The Git Updater plugin is no longer
+  required — its headers have been removed from `swinog-events.php`.
+  The updater caches its GitHub lookup and supports private repos via a
+  token constant/filter.
 
 = 1.0.7 =
 * Fixed: editing presentation metadata no longer wipes the linked PDF /
@@ -128,6 +135,10 @@ the Settings page will not be available there.
 * Removed unused `{prefix}swinog_events` database table.
 
 == Upgrade Notice ==
+
+= 1.0.8 =
+Updates now come directly from GitHub — you can uninstall the Git Updater
+plugin after upgrading. No other site-side changes required.
 
 = 1.0.7 =
 Fixes a regression that wiped legacy PDF/slide links on metadata

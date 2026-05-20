@@ -67,6 +67,10 @@ final class Plugin {
 		$this->components['assets'] = new Assets();
 		$this->components['assets']->register();
 
+		// GitHub Releases self-updater.
+		$this->components['updater'] = new Updater();
+		$this->components['updater']->register();
+
 		do_action( 'stgl_swinog_loaded', $this );
 	}
 
