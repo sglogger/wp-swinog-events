@@ -111,26 +111,37 @@ final class Updater {
 			return $result;
 		}
 
+		// Most of the modal is populated from the bundled readme.txt, exactly
+		// like the WordPress.org / Git Updater experience. The release lookup
+		// only supplies the downloadable version + package (and may be null if
+		// GitHub is unreachable — we still render the readme-based modal).
+		$readme  = $this->readme();
 		$release = $this->get_release();
-		if ( null === $release ) {
-			return $result;
+
+		$sections = $readme['sections'];
+		// Prefer the latest GitHub release notes for the changelog tab when the
+		// readme doesn't carry one.
+		if ( empty( $sections['changelog'] ) && null !== $release ) {
+			$sections['changelog'] = $release['changelog'];
+		}
+		if ( empty( $sections['changelog'] ) ) {
+			$sections['changelog'] = '<p>' . esc_html__( 'See the GitHub release notes for details.', 'stgl' ) . '</p>';
 		}
 
 		$info = [
-			'name'           => 'SwiNOG Events',
-			'slug'           => $this->slug,
-			'version'        => $release['version'],
-			'author'         => '<a href="https://www.glogger.ch">Steven Glogger</a>',
-			'homepage'       => 'https://github.com/' . self::REPO,
-			'download_link'  => $release['package'],
-			'requires'       => $release['requires'],
-			'requires_php'   => $release['requires_php'],
-			'tested'         => $release['tested'],
-			'last_updated'   => $release['published_at'],
-			'sections'       => [
-				'description' => esc_html__( 'Manage SwiNOG presentations and sponsors.', 'stgl' ),
-				'changelog'   => $release['changelog'],
-			],
+			'name'              => 'SwiNOG Events',
+			'slug'              => $this->slug,
+			'version'           => $release['version'] ?? $this->version,
+			'author'            => '<a href="https://www.glogger.ch">Steven Glogger</a>',
+			'homepage'          => 'https://github.com/' . self::REPO,
+			'download_link'     => $release['package'] ?? '',
+			'requires'          => $readme['requires'],
+			'requires_php'      => $readme['requires_php'],
+			'tested'            => $readme['tested'],
+			'last_updated'      => $release['published_at'] ?? '',
+			'short_description' => $readme['short_description'],
+			'sections'          => $sections,
+			'contributors'      => $readme['contributors'],
 		];
 
 		return (object) $info;
@@ -256,59 +267,234 @@ final class Updater {
 			}
 		}
 
+		$readme = $this->readme();
+
 		return [
 			'version'      => $version,
 			'package'      => $package,
-			'changelog'    => $this->format_changelog( (string) ( $body['body'] ?? '' ) ),
+			'changelog'    => $this->markup_to_html( (string) ( $body['body'] ?? '' ) ),
 			'published_at' => isset( $body['published_at'] )
 				? gmdate( 'Y-m-d', strtotime( (string) $body['published_at'] ) )
 				: '',
-			// These mirror the plugin headers; bump here if the headers change.
-			'requires'     => '6.0',
-			'requires_php' => '7.4',
-			'tested'       => get_bloginfo( 'version' ),
+			// Compatibility data is read from the bundled readme.txt headers so
+			// the "tested up to" value is real and not the running WP version.
+			'requires'     => $readme['requires'],
+			'requires_php' => $readme['requires_php'],
+			'tested'       => $readme['tested'],
 		];
 	}
 
 	/**
-	 * Render the release notes (Markdown) as the simple HTML the modal expects.
+	 * Parse the bundled readme.txt into the pieces the details modal needs.
 	 *
-	 * @param string $markdown Raw release body.
+	 * Returns header fields (requires / tested / requires_php / contributors),
+	 * the short description and each `== Section ==` rendered to HTML. Parsed
+	 * once per request. Mirrors the WordPress.org readme format closely enough
+	 * for the "View details" modal.
+	 *
+	 * @return array{requires:string,tested:string,requires_php:string,contributors:array<string,array<string,string>>,short_description:string,sections:array<string,string>}
+	 */
+	private function readme(): array {
+		static $parsed = null;
+		if ( null !== $parsed ) {
+			return $parsed;
+		}
+
+		$defaults = [
+			'requires'          => '6.0',
+			'tested'            => '',
+			'requires_php'      => '7.4',
+			'contributors'      => [],
+			'short_description' => '',
+			'sections'          => [],
+		];
+
+		$file = STGL_SWINOG_DIR . 'readme.txt';
+		if ( ! is_readable( $file ) ) {
+			return $parsed = $defaults;
+		}
+
+		$raw   = (string) file_get_contents( $file ); // phpcs:ignore -- reading our own bundled file.
+		$lines = preg_split( '/\r\n|\r|\n/', $raw );
+
+		$headers      = [];
+		$short        = [];
+		$sections_raw = [];
+		$current      = null;
+		$state        = 'title';
+
+		foreach ( (array) $lines as $line ) {
+			if ( 'title' === $state ) {
+				if ( preg_match( '/^===\s*.+?\s*===\s*$/', (string) $line ) ) {
+					$state = 'headers';
+				}
+				continue;
+			}
+
+			if ( 'headers' === $state ) {
+				if ( '' === trim( (string) $line ) ) {
+					$state = 'short';
+					continue;
+				}
+				if ( preg_match( '/^([A-Za-z][A-Za-z \-]+):\s*(.*)$/', (string) $line, $m ) ) {
+					$headers[ strtolower( trim( $m[1] ) ) ] = trim( $m[2] );
+					continue;
+				}
+				$state = 'short'; // No blank line before content; fall through.
+			}
+
+			if ( preg_match( '/^==\s*(.+?)\s*==\s*$/', (string) $line, $m ) ) {
+				$state                  = 'sections';
+				$current                = $this->section_key( $m[1] );
+				$sections_raw[ $current ] = [];
+				continue;
+			}
+
+			if ( 'short' === $state ) {
+				$short[] = (string) $line;
+			} elseif ( 'sections' === $state && null !== $current ) {
+				$sections_raw[ $current ][] = (string) $line;
+			}
+		}
+
+		$sections = [];
+		foreach ( $sections_raw as $key => $body ) {
+			$sections[ $key ] = $this->markup_to_html( implode( "\n", $body ) );
+		}
+
+		$contributors = [];
+		foreach ( array_filter( array_map( 'trim', explode( ',', $headers['contributors'] ?? '' ) ) ) as $user ) {
+			$contributors[ $user ] = [
+				'display_name' => $user,
+				'profile'      => 'https://profiles.wordpress.org/' . $user . '/',
+				'avatar'       => '',
+			];
+		}
+
+		return $parsed = [
+			'requires'          => $headers['requires at least'] ?? $defaults['requires'],
+			'tested'            => $headers['tested up to'] ?? $defaults['tested'],
+			'requires_php'      => $headers['requires php'] ?? $defaults['requires_php'],
+			'contributors'      => $contributors,
+			'short_description' => trim( preg_replace( '/\s+/', ' ', implode( ' ', $short ) ) ),
+			'sections'          => $sections,
+		];
+	}
+
+	/**
+	 * Map a readme section title to the key WordPress uses for its modal tabs.
+	 */
+	private function section_key( string $title ): string {
+		$title = strtolower( trim( $title ) );
+		if ( false !== strpos( $title, 'frequently asked' ) ) {
+			return 'faq';
+		}
+		return trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $title ), '_' );
+	}
+
+	/**
+	 * Convert the lightweight markup used in readme.txt / GitHub release notes
+	 * (lists, `= headings =`, inline code/bold/links) into the HTML the details
+	 * modal renders. Everything is escaped first, so it is safe for untrusted
+	 * release bodies.
+	 *
+	 * @param string $markup Raw readme/release text.
 	 * @return string
 	 */
-	private function format_changelog( string $markdown ): string {
-		if ( '' === trim( $markdown ) ) {
-			return esc_html__( 'See the GitHub release notes for details.', 'stgl' );
-		}
-		// Minimal, safe conversion: escape, then turn list/heading markers and
-		// line breaks into HTML. Good enough for the details modal.
-		$lines = preg_split( '/\r\n|\r|\n/', $markdown );
-		$html  = '';
-		$in_list = false;
-		foreach ( (array) $lines as $line ) {
-			$line = trim( (string) $line );
+	private function markup_to_html( string $markup ): string {
+		$lines     = preg_split( '/\r\n|\r|\n/', $markup );
+		$html      = '';
+		$paragraph = [];
+		$li        = '';
+		$list_tag  = ''; // '', 'ul' or 'ol' — empty means no list is open.
+
+		$flush_paragraph = function () use ( &$html, &$paragraph ) {
+			if ( $paragraph ) {
+				$html      .= '<p>' . $this->inline( implode( ' ', $paragraph ) ) . '</p>';
+				$paragraph  = [];
+			}
+		};
+		$flush_list = function () use ( &$html, &$li, &$list_tag ) {
+			if ( '' !== $li ) {
+				$html .= '<li>' . $this->inline( $li ) . '</li>';
+				$li    = '';
+			}
+			if ( '' !== $list_tag ) {
+				$html     .= '</' . $list_tag . '>';
+				$list_tag  = '';
+			}
+		};
+
+		foreach ( (array) $lines as $raw ) {
+			$line = trim( (string) $raw );
+
 			if ( '' === $line ) {
+				$flush_paragraph();
+				$flush_list();
 				continue;
 			}
-			if ( preg_match( '/^[-*]\s+(.*)$/', $line, $m ) ) {
-				$html   .= ( $in_list ? '' : '<ul>' ) . '<li>' . esc_html( $m[1] ) . '</li>';
-				$in_list = true;
+
+			$want = '';
+			if ( preg_match( '/^[*-]\s+(.*)$/', $line, $m ) ) {
+				$want = 'ul';
+			} elseif ( preg_match( '/^\d+[.)]\s+(.*)$/', $line, $m ) ) {
+				$want = 'ol';
+			}
+			if ( '' !== $want ) {
+				$flush_paragraph();
+				if ( '' !== $li ) {
+					$html .= '<li>' . $this->inline( $li ) . '</li>';
+					$li    = '';
+				}
+				if ( $list_tag !== $want ) {
+					if ( '' !== $list_tag ) {
+						$html .= '</' . $list_tag . '>';
+					}
+					$html    .= '<' . $want . '>';
+					$list_tag = $want;
+				}
+				$li = $m[1];
 				continue;
 			}
-			if ( $in_list ) {
-				$html  .= '</ul>';
-				$in_list = false;
+
+			if ( preg_match( '/^=+\s*(.+?)\s*=+$/', $line, $m )
+				|| preg_match( '/^#{1,6}\s+(.*)$/', $line, $m ) ) {
+				$flush_paragraph();
+				$flush_list();
+				$html .= '<h4>' . $this->inline( $m[1] ) . '</h4>';
+				continue;
 			}
-			if ( preg_match( '/^#{1,6}\s+(.*)$/', $line, $m ) ) {
-				$html .= '<h4>' . esc_html( $m[1] ) . '</h4>';
+
+			// Continuation of the current list item, otherwise a paragraph line.
+			if ( '' !== $li ) {
+				$li .= ' ' . $line;
 			} else {
-				$html .= '<p>' . esc_html( $line ) . '</p>';
+				$paragraph[] = $line;
 			}
 		}
-		if ( $in_list ) {
-			$html .= '</ul>';
-		}
+
+		$flush_paragraph();
+		$flush_list();
+
 		return $html;
+	}
+
+	/**
+	 * Apply inline markup (code, bold, links) to an already-trimmed line. The
+	 * text is HTML-escaped first; only the recognised tokens become tags.
+	 */
+	private function inline( string $text ): string {
+		$text = esc_html( $text );
+		$text = (string) preg_replace_callback(
+			'/\[([^\]]+)\]\(([^)\s]+)\)/',
+			static function ( $m ) {
+				return '<a href="' . esc_url( html_entity_decode( $m[2] ) ) . '">' . $m[1] . '</a>';
+			},
+			$text
+		);
+		$text = (string) preg_replace( '/`([^`]+)`/', '<code>$1</code>', $text );
+		$text = (string) preg_replace( '/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $text );
+		return $text;
 	}
 
 	/**

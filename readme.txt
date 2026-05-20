@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.8
+Stable tag: 1.0.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -65,6 +65,13 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.0.9 =
+* Fixed: the "View details" modal was nearly empty after the move to the
+  built-in updater. It now parses the bundled readme.txt to populate the
+  Description, Installation, FAQ and full Changelog tabs, the contributor
+  list, and the correct "Tested up to" value (previously it showed the
+  running WordPress version).
 
 = 1.0.8 =
 * Changed: updates are now served by a built-in GitHub Releases updater
@@ -135,6 +142,10 @@ the Settings page will not be available there.
 * Removed unused `{prefix}swinog_events` database table.
 
 == Upgrade Notice ==
+
+= 1.0.9 =
+Restores the full plugin "View details" popup (description, changelog,
+FAQ) that was missing in 1.0.8.
 
 = 1.0.8 =
 Updates now come directly from GitHub — you can uninstall the Git Updater
