@@ -75,24 +75,29 @@ final class Shortcodes {
 	/* ------------------------------------------------------------------ */
 
 	public function presentations( $atts ): string {
-		return $this->render_presentations_table( (array) $atts, __( 'Presentations', 'stgl' ), false, true );
+		return $this->render_presentations_table( (array) $atts, __( 'Presentations', 'stgl' ), false, true, false );
 	}
 
 	public function agenda( $atts ): string {
-		return $this->render_presentations_table( (array) $atts, __( 'Agenda', 'stgl' ), true, false );
+		return $this->render_presentations_table( (array) $atts, __( 'Agenda', 'stgl' ), true, false, true );
 	}
 
-	private function render_presentations_table( array $atts, string $heading, bool $show_time, bool $show_links ): string {
+	private function render_presentations_table( array $atts, string $heading, bool $show_time, bool $show_links, bool $type_default ): string {
 		if ( '' === (string) ( $atts['event'] ?? '' ) && '' !== (string) ( $atts['cat'] ?? '' ) ) {
 			$atts['event'] = $atts['cat'];
 		}
 		$atts = shortcode_atts( [
-			'event'    => '',
-			'orderby'  => 'meta_value',
-			'order'    => 'ASC',
-			'meta_key' => 'stgl_presenter_time',
-			'posts'    => -1,
+			'event'     => '',
+			'orderby'   => 'meta_value',
+			'order'     => 'ASC',
+			'meta_key'  => 'stgl_presenter_time',
+			'posts'     => -1,
+			'show_type' => '', // '' = shortcode default, otherwise 1/0.
 		], $atts, 'swinog_list_presentations' );
+
+		$show_type = '' === (string) $atts['show_type']
+			? $type_default
+			: self::truthy( (string) $atts['show_type'] );
 
 		$query = new \WP_Query( [
 			'post_type'              => Post_Types::CPT_PRESENTATION,
@@ -127,6 +132,9 @@ final class Shortcodes {
 						<?php if ( $show_time ) : ?>
 							<th class="col-time"><?php esc_html_e( 'Time', 'stgl' ); ?></th>
 						<?php endif; ?>
+						<?php if ( $show_type ) : ?>
+							<th class="col-type"><?php esc_html_e( 'Type', 'stgl' ); ?></th>
+						<?php endif; ?>
 						<th><?php esc_html_e( 'Topic', 'stgl' ); ?></th>
 						<th><?php esc_html_e( 'Presenter', 'stgl' ); ?></th>
 						<th><?php esc_html_e( 'Company', 'stgl' ); ?></th>
@@ -148,12 +156,18 @@ final class Shortcodes {
 				$video_pub   = (bool) get_post_meta( $id, 'stgl_presenter_publish_video', true );
 				$video_url   = (string) get_post_meta( $id, 'stgl_presenter_videourl', true );
 				$attachment  = self::resolve_attachment( $id );
+				$type        = Installer::resolve_presentation_type( $id );
 
 				$file_url = ( $publish && $attachment ) ? $attachment : '';
 				?>
-				<tr class="stgl-row">
+				<tr class="stgl-row stgl-row-type-<?php echo esc_attr( $type['slug'] ); ?>">
 					<?php if ( $show_time ) : ?>
 						<td class="col-time"><?php echo esc_html( $time ); ?></td>
+					<?php endif; ?>
+					<?php if ( $show_type ) : ?>
+						<td class="col-type">
+							<span class="stgl-type stgl-type-<?php echo esc_attr( $type['slug'] ); ?>"><?php echo esc_html( $type['label'] ); ?></span>
+						</td>
 					<?php endif; ?>
 					<td class="col-title">
 						<strong>
@@ -327,6 +341,13 @@ final class Shortcodes {
 				'terms'    => $event_slug,
 			],
 		];
+	}
+
+	/**
+	 * Loose boolean parsing for shortcode attributes ("1", "yes", "true", "on").
+	 */
+	private static function truthy( string $value ): bool {
+		return in_array( strtolower( trim( $value ) ), [ '1', 'yes', 'true', 'on' ], true );
 	}
 
 	private function term_name( string $event_slug ): string {

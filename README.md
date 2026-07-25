@@ -7,7 +7,7 @@ pages that embed the agenda / presentation / sponsor shortcodes; events
 themselves are organised via the `stgl_presentation_cat` taxonomy (one term
 per SwiNOG, e.g. `swinog-41`).
 
-* **Version:** 1.0.7
+* **Version:** 1.0.10
 * **Requires WordPress:** 6.0+
 * **Requires PHP:** 7.4+
 * **License:** GPL-2.0-or-later
@@ -80,13 +80,38 @@ Each shortcode filters by the `stgl_presentation_cat` taxonomy slug
 | `[swinog_list_all_events]` | Lists all event pages — i.e. the child pages of the current page. Drop on the parent "Events" page to auto-enumerate every SwiNOG. Optional `parent="<id>"` to list children of an arbitrary page. |
 
 Optional attributes accepted by all four: `orderby`, `order`, `meta_key`,
-`posts`. The full attribute reference and worked examples live on the
-**Presentations → Settings** screen.
+`posts`. The presentation/agenda shortcodes additionally accept `show_type`
+(`1`/`0`) to show or hide the **Type** column – on by default for
+`[swinog_list_agenda]`, off for `[swinog_list_presentations]`. The full
+attribute reference and worked examples live on the **Presentations →
+Settings** screen.
 
 The presentation and sponsor CPTs remain registered with `show_in_rest`,
 so the standard `/wp-json/wp/v2/stgl_presentation` and `/wp-json/wp/v2/stgl_sponsor`
 endpoints are available if you need raw data – custom meta fields are
 exposed with proper types.
+
+## Agenda entry types
+
+Every presentation is classified in the timetable – `Talk`, `Break`,
+`Keynote`, `Transportation`, `Social` or `Other`. Entries are talks unless
+the type is overwritten:
+
+* **Per entry:** the **Type** dropdown at the top of *SwiNOG Presentation
+  Details*. Leaving it on *— default —* stores nothing and renders as
+  `Talk`, so legacy presentations keep working untouched.
+* **The list itself:** *Presentations → Settings* → **Presentation types**.
+  Rename, delete (clear the label) or add types; an empty slug is derived
+  from the label. Stored on the `stgl_swinog_presentation_types` option as
+  `slug => label`.
+
+The agenda renders the label as a badge in a `Type` column, and tags the row
+with `stgl-row-type-{slug}` (badge: `stgl-type-{slug}`) so a theme can style
+breaks and social slots differently from talks.
+
+If a type is removed from the settings while presentations still use it, the
+stored slug is kept and shown with a prettified label rather than being
+silently relabelled.
 
 ## New meta fields
 
@@ -96,12 +121,14 @@ These are **additive** – they default to empty for legacy posts.
 
 * `stgl_presenter_bio`.
 * `stgl_presenter_twitter`, `stgl_presenter_linkedin`.
+* `stgl_presenter_type` – agenda entry type slug; empty means "default"
+  (`talk`).
 
 ## Settings
 
-**Presentations → Settings** – add, rename or remove sponsor tiers, and find
-the full shortcode help (attribute reference + worked examples).
-Existing tiers are preserved.
+**Presentations → Settings** – add, rename or remove sponsor tiers and
+presentation types, and find the full shortcode help (attribute reference +
+worked examples). Existing tiers and types are preserved.
 
 ## Updates
 

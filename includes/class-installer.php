@@ -19,9 +19,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Installer {
 
-	public const OPTION_VERSION        = 'stgl_swinog_event_version';
-	public const OPTION_DATA_VERSION   = 'stgl_swinog_data_version';
-	public const OPTION_SPONSOR_LEVELS = 'stgl_swinog_sponsor_levels';
+	public const OPTION_VERSION            = 'stgl_swinog_event_version';
+	public const OPTION_DATA_VERSION       = 'stgl_swinog_data_version';
+	public const OPTION_SPONSOR_LEVELS     = 'stgl_swinog_sponsor_levels';
+	public const OPTION_PRESENTATION_TYPES = 'stgl_swinog_presentation_types';
+
+	/**
+	 * Slug used when a presentation carries no explicit type. Presentations are
+	 * talks unless the editor overwrites the type on the edit screen.
+	 */
+	public const DEFAULT_PRESENTATION_TYPE = 'talk';
 
 	/**
 	 * Default sponsor levels (preserved from v0.x).
@@ -46,6 +53,92 @@ final class Installer {
 	}
 
 	/**
+	 * Default agenda entry types, keyed by slug.
+	 *
+	 * The list is editable on the Settings screen; these are only the seeds.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function default_presentation_types(): array {
+		return [
+			'talk'           => 'Talk',
+			'keynote'        => 'Keynote',
+			'break'          => 'Break',
+			'transportation' => 'Transportation',
+			'social'         => 'Social',
+			'other'          => 'Other',
+		];
+	}
+
+	/**
+	 * The configured (or default) agenda entry types, keyed by slug.
+	 *
+	 * @return array<string, string>
+	 */
+	public static function presentation_types(): array {
+		$types = get_option( self::OPTION_PRESENTATION_TYPES, null );
+
+		if ( ! is_array( $types ) || [] === $types ) {
+			return self::default_presentation_types();
+		}
+
+		$out = [];
+		foreach ( $types as $slug => $label ) {
+			$slug = sanitize_key( (string) $slug );
+			if ( '' !== $slug ) {
+				$out[ $slug ] = (string) $label;
+			}
+		}
+
+		return [] === $out ? self::default_presentation_types() : $out;
+	}
+
+	/**
+	 * Slug used for presentations without an explicit type. Falls back to the
+	 * first configured type if `talk` was renamed or removed.
+	 */
+	public static function default_presentation_type(): string {
+		return self::default_type_from( self::presentation_types() );
+	}
+
+	/**
+	 * @param array<string, string> $types
+	 */
+	private static function default_type_from( array $types ): string {
+		if ( isset( $types[ self::DEFAULT_PRESENTATION_TYPE ] ) ) {
+			return self::DEFAULT_PRESENTATION_TYPE;
+		}
+
+		return (string) array_key_first( $types );
+	}
+
+	/**
+	 * Resolve a presentation's type into a slug + display label.
+	 *
+	 * An empty meta value means "not overwritten" and resolves to the default
+	 * type. A slug that is no longer configured (renamed / deleted in the
+	 * settings) is kept as-is and gets a prettified label, so stored data is
+	 * never silently relabelled.
+	 *
+	 * @return array{slug: string, label: string}
+	 */
+	public static function resolve_presentation_type( int $post_id ): array {
+		$types = self::presentation_types();
+		$slug  = sanitize_key( (string) get_post_meta( $post_id, 'stgl_presenter_type', true ) );
+
+		if ( '' === $slug ) {
+			$slug = self::default_type_from( $types );
+		}
+
+		$label = $types[ $slug ] ?? ucwords( str_replace( [ '-', '_' ], ' ', $slug ) );
+
+		return [
+			'slug'  => $slug,
+			'label' => (string) $label,
+		];
+	}
+
+	/**
 	 * Fired on plugin activation.
 	 */
 	public static function activate(): void {
@@ -56,6 +149,7 @@ final class Installer {
 		// Seed options only if they don't already exist – never overwrite.
 		add_option( self::OPTION_VERSION, STGL_SWINOG_VERSION );
 		add_option( self::OPTION_SPONSOR_LEVELS, self::default_sponsor_levels() );
+		add_option( self::OPTION_PRESENTATION_TYPES, self::default_presentation_types() );
 
 		// Make sure post types & rewrites exist before flushing.
 		( new Post_Types() )->register();
@@ -143,6 +237,7 @@ final class Installer {
 			self::OPTION_VERSION,
 			self::OPTION_DATA_VERSION,
 			self::OPTION_SPONSOR_LEVELS,
+			self::OPTION_PRESENTATION_TYPES,
 			'stgl_swinog_event_status', // legacy
 			'stgl_swinog_agenda_type',  // legacy
 			'stgl_swinog_event_levels', // legacy

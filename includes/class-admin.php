@@ -40,6 +40,7 @@ final class Admin {
 	public function presentation_columns( array $columns ): array {
 		$date = $columns['date'] ?? null;
 		unset( $columns['date'] );
+		$columns['stgl_presenter_type']      = __( 'Type', 'stgl' );
 		$columns['stgl_presenter']           = __( 'Presenter', 'stgl' );
 		$columns['stgl_presenter_company']   = __( 'Company', 'stgl' );
 		$columns['stgl_presenter_published'] = __( 'Published?', 'stgl' );
@@ -51,6 +52,7 @@ final class Admin {
 	}
 
 	public function sortable_presentation_columns( array $columns ): array {
+		$columns['stgl_presenter_type']    = 'stgl_presenter_type';
 		$columns['stgl_presenter']         = 'stgl_presenter_name';
 		$columns['stgl_presenter_company'] = 'stgl_presenter_company';
 		$columns['stgl_presenter_time']    = 'stgl_presenter_time';
@@ -59,6 +61,10 @@ final class Admin {
 
 	public function render_presentation_column( string $column, int $post_id ): void {
 		switch ( $column ) {
+			case 'stgl_presenter_type':
+				$type = Installer::resolve_presentation_type( $post_id );
+				echo esc_html( $type['label'] );
+				break;
 			case 'stgl_presenter':
 				echo esc_html( (string) get_post_meta( $post_id, 'stgl_presenter_name', true ) );
 				break;
@@ -136,6 +142,12 @@ final class Admin {
 			'sanitize_callback' => [ $this, 'sanitize_sponsor_levels' ],
 			'default'           => Installer::default_sponsor_levels(),
 		] );
+
+		register_setting( 'stgl_swinog_settings', Installer::OPTION_PRESENTATION_TYPES, [
+			'type'              => 'array',
+			'sanitize_callback' => [ $this, 'sanitize_presentation_types' ],
+			'default'           => Installer::default_presentation_types(),
+		] );
 	}
 
 	/**
@@ -152,6 +164,25 @@ final class Admin {
 		}
 		krsort( $out, SORT_NUMERIC );
 		return $out;
+	}
+
+	/**
+	 * @param mixed $input
+	 * @return array<string, string>
+	 */
+	public function sanitize_presentation_types( $input ): array {
+		if ( ! is_array( $input ) ) {
+			return Installer::default_presentation_types();
+		}
+		$out = [];
+		foreach ( $input as $slug => $label ) {
+			$slug  = sanitize_key( (string) $slug );
+			$label = sanitize_text_field( (string) $label );
+			if ( '' !== $slug && '' !== $label ) {
+				$out[ $slug ] = $label;
+			}
+		}
+		return [] === $out ? Installer::default_presentation_types() : $out;
 	}
 
 	public function render_settings_page(): void {
@@ -174,10 +205,34 @@ final class Admin {
 			}
 			krsort( $rebuilt, SORT_NUMERIC );
 			update_option( Installer::OPTION_SPONSOR_LEVELS, $rebuilt );
+
+			// Presentation types. A row needs both a label and a slug; the slug
+			// is derived from the label when left blank, so adding "Icebreaker"
+			// is a one-field job.
+			$type_slugs  = isset( $_POST['types_slug'] ) ? (array) $_POST['types_slug'] : [];
+			$type_labels = isset( $_POST['types_label'] ) ? (array) $_POST['types_label'] : [];
+
+			$types = [];
+			foreach ( $type_labels as $i => $label ) {
+				$label = sanitize_text_field( wp_unslash( $label ) );
+				if ( '' === $label ) {
+					continue;
+				}
+				$slug = sanitize_key( wp_unslash( (string) ( $type_slugs[ $i ] ?? '' ) ) );
+				if ( '' === $slug ) {
+					$slug = sanitize_key( sanitize_title( $label ) );
+				}
+				if ( '' !== $slug ) {
+					$types[ $slug ] = $label;
+				}
+			}
+			update_option( Installer::OPTION_PRESENTATION_TYPES, $types ?: Installer::default_presentation_types() );
+
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Settings saved.', 'stgl' ) . '</p></div>';
 		}
 
 		$levels = get_option( Installer::OPTION_SPONSOR_LEVELS, Installer::default_sponsor_levels() );
+		$types  = Installer::presentation_types();
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'SwiNOG Events – Settings', 'stgl' ); ?></h1>
@@ -206,6 +261,40 @@ final class Admin {
 						<tr>
 							<td><input type="number" name="levels_weight[]" value="" class="small-text" placeholder="0" /></td>
 							<td><input type="text" name="levels_label[]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'New level…', 'stgl' ); ?>" /></td>
+						</tr>
+					<?php endfor; ?>
+					</tbody>
+				</table>
+
+				<h2 style="margin-top:2em"><?php esc_html_e( 'Presentation types', 'stgl' ); ?></h2>
+				<p class="description">
+					<?php
+					printf(
+						/* translators: %s: slug of the default type */
+						esc_html__( 'Classification shown in the agenda (talk, break, keynote, …). Each presentation can overwrite its type on the edit screen; entries without an explicit type fall back to "%s". Clear a label to delete a type; leave the slug empty to derive it from the label.', 'stgl' ),
+						esc_html( Installer::DEFAULT_PRESENTATION_TYPE )
+					);
+					?>
+				</p>
+
+				<table class="widefat striped" style="max-width:600px">
+					<thead>
+						<tr>
+							<th style="width:180px"><?php esc_html_e( 'Slug', 'stgl' ); ?></th>
+							<th><?php esc_html_e( 'Label', 'stgl' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+					<?php foreach ( $types as $slug => $label ) : ?>
+						<tr>
+							<td><input type="text" name="types_slug[]" value="<?php echo esc_attr( (string) $slug ); ?>" class="regular-text" /></td>
+							<td><input type="text" name="types_label[]" value="<?php echo esc_attr( (string) $label ); ?>" class="regular-text" /></td>
+						</tr>
+					<?php endforeach; ?>
+					<?php for ( $i = 0; $i < 2; $i++ ) : ?>
+						<tr>
+							<td><input type="text" name="types_slug[]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'auto', 'stgl' ); ?>" /></td>
+							<td><input type="text" name="types_label[]" value="" class="regular-text" placeholder="<?php esc_attr_e( 'New type…', 'stgl' ); ?>" /></td>
 						</tr>
 					<?php endfor; ?>
 					</tbody>
@@ -282,6 +371,10 @@ final class Admin {
 					<tr>
 						<td><code>posts</code></td>
 						<td><?php esc_html_e( 'Limit results. -1 (default) returns all.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
+						<td><code>show_type</code></td>
+						<td><?php esc_html_e( 'Presentation/agenda shortcodes only: show the Type column (Talk, Break, Keynote, …). Defaults to 1 for the agenda and 0 for the presentation list; set show_type="0" or "1" to overrule.', 'stgl' ); ?></td>
 					</tr>
 					<tr>
 						<td><code>layout</code></td>

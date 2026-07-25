@@ -143,6 +143,8 @@ final class Post_Types {
 			'stgl_presenter_publish'       => 'boolean',
 			'stgl_presenter_publish_video' => 'boolean',
 			'stgl_presenter_time'          => 'string',
+			// Agenda entry type (talk, break, keynote, …). Empty = default type.
+			'stgl_presenter_type'          => 'string', // NEW
 			// NB: typo retained for backward compat (old data lives under this key)
 			'stgl_presenter_lenght'        => 'integer',
 			'stgl_presenter_bio'           => 'string', // NEW
@@ -186,6 +188,9 @@ final class Post_Types {
 				}
 				if ( $key === 'stgl_presenter_bio' || $key === 'stgl_sponsor_notes' ) {
 					return static fn( $v ): string => wp_kses_post( (string) $v );
+				}
+				if ( $key === 'stgl_presenter_type' ) {
+					return static fn( $v ): string => sanitize_key( (string) $v );
 				}
 				return static fn( $v ): string => sanitize_text_field( (string) $v );
 		}

@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.9
+Stable tag: 1.0.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,8 @@ SwiNOG Events is a complete rewrite of the legacy `swinog_events` plugin (0.x). 
 * New: iCal (`text/calendar`) export per event.
 * New: JSON-LD `Event` structured data on single event pages.
 * Editable sponsor tiers from a dedicated Settings page.
+* Agenda entry types (Talk, Break, Keynote, Transportation, Social, Other) –
+  editable list, overwritable per presentation, shown as a Type column.
 * Modern Media Library picker for slide / video file uploads.
 * PHP 7.4+ codebase with strict types, namespaced classes, escaped output.
 
@@ -43,7 +45,8 @@ SwiNOG Events is a complete rewrite of the legacy `swinog_events` plugin (0.x). 
 1. Deactivate the old `swinog_events` plugin if installed.
 2. Upload `swinog-events` to `/wp-content/plugins/`.
 3. Activate it from **Plugins**. The migration runs automatically.
-4. Configure sponsor tiers under **Settings → SwiNOG Events**.
+4. Configure sponsor tiers and presentation types under
+   **Presentations → Settings**.
 
 == Frequently Asked Questions ==
 
@@ -65,6 +68,22 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.0.10 =
+* Added: agenda entry types. Every presentation now carries a type
+  (Talk, Break, Keynote, Transportation, Social, Other) that can be
+  overwritten per entry via a dropdown in **SwiNOG Presentation Details**.
+  Entries left on "default" are shown as *Talk*, so existing content keeps
+  rendering unchanged.
+* Added: the type list is editable under **Presentations → Settings** –
+  rename, remove or add your own types (leave the slug empty and it is
+  derived from the label).
+* Added: `[swinog_list_agenda]` renders a **Type** column; the row gets a
+  `stgl-row-type-{slug}` class and the badge a `stgl-type-{slug}` class for
+  theming. Use `show_type="0"` to hide it, or `show_type="1"` to switch it
+  on for `[swinog_list_presentations]`.
+* Added: sortable **Type** column on the presentations admin list.
+* New meta key `stgl_presenter_type` (exposed via REST, empty = default).
 
 = 1.0.9 =
 * Fixed: the "View details" modal was nearly empty after the move to the
@@ -142,6 +161,11 @@ the Settings page will not be available there.
 * Removed unused `{prefix}swinog_events` database table.
 
 == Upgrade Notice ==
+
+= 1.0.10 =
+Adds classifiable agenda entries (Talk, Break, Keynote, Transportation,
+Social, Other) with an editable type list and a per-presentation override.
+Existing presentations default to "Talk"; nothing needs to be re-entered.
 
 = 1.0.9 =
 Restores the full plugin "View details" popup (description, changelog,

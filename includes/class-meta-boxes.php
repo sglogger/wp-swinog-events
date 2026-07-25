@@ -109,9 +109,39 @@ final class Meta_Boxes {
 		wp_nonce_field( self::NONCE_ACTION, self::NONCE_FIELD );
 
 		$m = self::meta( $post->ID );
+
+		$types        = Installer::presentation_types();
+		$default_type = Installer::default_presentation_type();
+		$current_type = sanitize_key( $m['stgl_presenter_type'] );
+
+		// Keep a stored slug selectable even if it was removed from the settings.
+		if ( '' !== $current_type && ! isset( $types[ $current_type ] ) ) {
+			$types[ $current_type ] = ucwords( str_replace( [ '-', '_' ], ' ', $current_type ) );
+		}
 		?>
 		<table class="form-table stgl-meta-table">
 			<tbody>
+			<tr>
+				<th><label for="stgl_presenter_type"><?php esc_html_e( 'Type', 'stgl' ); ?></label></th>
+				<td>
+					<select id="stgl_presenter_type" name="stgl_presenter_type">
+						<option value=""<?php selected( '' === $current_type ); ?>>
+							<?php
+							/* translators: %s: label of the default agenda entry type */
+							printf( esc_html__( '— default (%s) —', 'stgl' ), esc_html( (string) ( $types[ $default_type ] ?? $default_type ) ) );
+							?>
+						</option>
+						<?php foreach ( $types as $slug => $label ) : ?>
+							<option value="<?php echo esc_attr( (string) $slug ); ?>" <?php selected( $current_type, (string) $slug ); ?>>
+								<?php echo esc_html( '' !== (string) $label ? (string) $label : (string) $slug ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description">
+						<?php esc_html_e( 'Overwrites how this entry is classified in the agenda (talk, break, keynote, …). Edit the list under Presentations → Settings.', 'stgl' ); ?>
+					</p>
+				</td>
+			</tr>
 			<tr>
 				<th><label for="stgl_presenter_name"><?php esc_html_e( 'Presenter name(s)', 'stgl' ); ?></label></th>
 				<td><input type="text" id="stgl_presenter_name" name="stgl_presenter_name" value="<?php echo esc_attr( $m['stgl_presenter_name'] ); ?>" class="regular-text" /></td>
@@ -335,6 +365,17 @@ final class Meta_Boxes {
 			update_post_meta( $id, 'stgl_presenter_lenght', max( 0, (int) $_POST['stgl_presenter_lenght'] ) );
 		}
 
+		// Agenda entry type. An empty value means "use the default type". Only
+		// configured slugs are accepted, plus whatever is already stored – so a
+		// type that was later removed from the settings survives a re-save.
+		if ( isset( $_POST['stgl_presenter_type'] ) ) {
+			$type   = sanitize_key( wp_unslash( $_POST['stgl_presenter_type'] ) );
+			$types  = Installer::presentation_types();
+			$stored = sanitize_key( (string) get_post_meta( $id, 'stgl_presenter_type', true ) );
+			$valid  = isset( $types[ $type ] ) || $type === $stored;
+			update_post_meta( $id, 'stgl_presenter_type', $valid ? $type : '' );
+		}
+
 		// Checkboxes – use *_present hidden field to detect that the box was on screen.
 		if ( isset( $_POST['stgl_presenter_publish_present'] ) ) {
 			update_post_meta( $id, 'stgl_presenter_publish', empty( $_POST['stgl_presenter_publish'] ) ? '' : '1' );
@@ -447,7 +488,7 @@ final class Meta_Boxes {
 			// Presentation
 			'stgl_presenter_name', 'stgl_presenter_company', 'stgl_presenter_email',
 			'stgl_presenter_videourl', 'stgl_presenter_publish', 'stgl_presenter_publish_video',
-			'stgl_presenter_time', 'stgl_presenter_lenght',
+			'stgl_presenter_time', 'stgl_presenter_lenght', 'stgl_presenter_type',
 			'stgl_presenter_bio', 'stgl_presenter_twitter', 'stgl_presenter_linkedin',
 			// Sponsor
 			'stgl_sponsor_url', 'stgl_sponsor_notes', 'stgl_sponsor_level',
