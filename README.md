@@ -133,7 +133,8 @@ The agenda can be imported from the SwiNOG CFP tool
 
 * **CFP server URL** – e.g. `https://cfp.swinog.ch` (a trailing `/api` or
   `/api/v1` is stripped).
-* **API key** – sent as `Authorization: Bearer …`. It is required, because
+* **API key** – a CFP API token (`swcfp_…`) with the `read-internal` scope,
+  sent as `Authorization: Bearer …`. It is required, because
   only the admin slot list (`/api/v1/admin/events/{id}/slots`) carries
   presenter e-mail, consents and video URL. The stored key is never shown
   again; leave the field empty to keep it.

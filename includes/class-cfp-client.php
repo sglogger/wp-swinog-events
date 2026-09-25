@@ -172,8 +172,10 @@ final class Cfp_Client {
 
 		if ( 200 !== $code ) {
 			$detail = is_array( $body ) && is_string( $body['detail'] ?? null ) ? $body['detail'] : '';
-			if ( in_array( $code, [ 401, 403 ], true ) && $auth ) {
-				$detail = trim( ( '' !== $detail ? $detail . ' – ' : '' ) . __( 'The CFP server did not accept the API key. Check the key under Settings → API Settings and that the CFP tool enforces API tokens on admin routes.', 'stgl' ) );
+			if ( $auth && 401 === $code ) {
+				$detail = trim( ( '' !== $detail ? $detail . ' – ' : '' ) . __( 'The API key is unknown, malformed or revoked. Enter a valid key under Settings → API Settings.', 'stgl' ) );
+			} elseif ( $auth && 403 === $code ) {
+				$detail = trim( ( '' !== $detail ? $detail . ' – ' : '' ) . __( 'The API key is valid but lacks the required scope. Create a token with the "read-internal" scope in the CFP tool (Settings → API tokens) and enter it under Settings → API Settings.', 'stgl' ) );
 			}
 			return new \WP_Error(
 				'stgl_cfp_http',

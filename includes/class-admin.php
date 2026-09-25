@@ -490,7 +490,7 @@ final class Admin {
 							<?php if ( '' !== $settings['api_key'] ) : ?>
 								<label style="margin-left:.5em"><input type="checkbox" name="cfp_api_key_clear" value="1" /> <?php esc_html_e( 'Remove stored key', 'stgl' ); ?></label>
 							<?php endif; ?>
-							<p class="description"><?php esc_html_e( 'Sent as "Authorization: Bearer …". Needed for the admin slot list, which carries presenter e-mail, consents and video URL.', 'stgl' ); ?></p>
+							<p class="description"><?php esc_html_e( 'CFP API token (swcfp_…) with the "read-internal" scope, sent as "Authorization: Bearer …". Needed for the admin slot list, which carries presenter e-mail, consents and video URL.', 'stgl' ); ?></p>
 						</td>
 					</tr>
 					</tbody>
