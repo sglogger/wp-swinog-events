@@ -459,6 +459,11 @@ final class Admin {
 			}
 		}
 
+		if ( isset( $_POST['stgl_cfp_lineup_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['stgl_cfp_lineup_nonce'] ) ), 'stgl_cfp_lineup_flush' ) ) {
+			Shortcodes::flush_lineup_cache();
+			$notices[] = [ 'success', __( 'Speaker line-up cache cleared. The next page view loads fresh data from the CFP tool.', 'stgl' ) ];
+		}
+
 		$settings = Cfp_Client::settings();
 		$types    = Installer::presentation_types();
 		$default  = Installer::default_presentation_type();
@@ -536,6 +541,15 @@ final class Admin {
 					<?php submit_button( __( 'Save Changes', 'stgl' ), 'primary', 'submit', false ); ?>
 					<?php submit_button( __( 'Save & test connection', 'stgl' ), 'secondary', 'stgl_cfp_test', false ); ?>
 				</p>
+			</form>
+
+			<hr style="margin:2.5em 0 1.5em" />
+
+			<h2><?php esc_html_e( 'Speaker line-up cache', 'stgl' ); ?></h2>
+			<p class="description"><?php esc_html_e( '[swinog_list_speaker_lineup] caches the CFP data for 15 minutes. Clear it to show status changes (e.g. a talk moved back to "under review") right away.', 'stgl' ); ?></p>
+			<form method="post">
+				<?php wp_nonce_field( 'stgl_cfp_lineup_flush', 'stgl_cfp_lineup_nonce' ); ?>
+				<?php submit_button( __( 'Refresh speaker line-up', 'stgl' ), 'secondary', 'stgl_cfp_lineup_flush', false ); ?>
 			</form>
 		</div>
 		<?php

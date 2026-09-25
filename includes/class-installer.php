@@ -25,6 +25,7 @@ final class Installer {
 	public const OPTION_PRESENTATION_TYPES = 'stgl_swinog_presentation_types';
 	public const OPTION_CFP_API            = 'stgl_swinog_cfp_api';
 	public const OPTION_CFP_EVENT_MAP      = 'stgl_swinog_cfp_event_map';
+	public const OPTION_CFP_LINEUP_GEN     = 'stgl_swinog_cfp_lineup_gen';
 
 	/**
 	 * Slug used when a presentation carries no explicit type. Presentations are
@@ -242,6 +243,7 @@ final class Installer {
 			self::OPTION_PRESENTATION_TYPES,
 			self::OPTION_CFP_API,
 			self::OPTION_CFP_EVENT_MAP,
+			self::OPTION_CFP_LINEUP_GEN,
 			'stgl_swinog_event_status', // legacy
 			'stgl_swinog_agenda_type',  // legacy
 			'stgl_swinog_event_levels', // legacy

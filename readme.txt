@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,12 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.2.1 =
+* Added: **Settings → API Settings → Refresh speaker line-up** clears the
+  cached `[swinog_list_speaker_lineup]` data, so status changes in the CFP
+  tool (e.g. a talk moved back to "under review") show up immediately
+  instead of after up to 15 minutes.
 
 = 1.2.0 =
 * Added: `[swinog_list_speaker_lineup event="swinog-42"]` – speaker cards

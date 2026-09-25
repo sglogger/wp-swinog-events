@@ -92,13 +92,23 @@ final class Shortcodes {
 	}
 
 	/**
+	 * Drop every cached speaker line-up (including the stale fallback) so the
+	 * next page view re-reads the CFP tool. Bumps a generation counter rather
+	 * than deleting transients by prefix, which also works with an object cache.
+	 */
+	public static function flush_lineup_cache(): void {
+		update_option( Installer::OPTION_CFP_LINEUP_GEN, (int) get_option( Installer::OPTION_CFP_LINEUP_GEN, 0 ) + 1, false );
+	}
+
+	/**
 	 * Speakers of a CFP event, cached for 15 minutes. If the CFP tool is
 	 * unreachable the last good result (kept for a week) is served instead.
 	 *
 	 * @return array<int, array{name: string, company: string, title: string, initials: string}>|\WP_Error
 	 */
 	private static function lineup_speakers( string $slug ) {
-		$key    = 'stgl_cfp_lineup_' . md5( $slug );
+		$gen    = (int) get_option( Installer::OPTION_CFP_LINEUP_GEN, 0 );
+		$key    = 'stgl_cfp_lineup_' . md5( $gen . '|' . $slug );
 		$cached = get_transient( $key );
 		if ( is_array( $cached ) ) {
 			return $cached;
