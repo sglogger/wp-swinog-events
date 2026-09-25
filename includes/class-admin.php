@@ -338,6 +338,10 @@ final class Admin {
 						<td><?php esc_html_e( 'Sponsor grid grouped by level. Use layout="list" for a flat grid.', 'stgl' ); ?></td>
 					</tr>
 					<tr>
+						<td><code>[swinog_list_speaker_lineup event="swinog-NN"]</code></td>
+						<td><?php esc_html_e( 'Speaker line-up pulled from the CFP tool: name, company and talk title of every submission that is accepted, needs changes, scheduled or presented. "event" is the CFP event slug (see the CFP events list), not the event category. Needs the API key under API Settings; cached for 15 minutes. Optional title="…" adds a heading.', 'stgl' ); ?></td>
+					</tr>
+					<tr>
 						<td><code>[swinog_list_all_events]</code></td>
 						<td><?php esc_html_e( 'List all event pages (child pages of the current page). Place on your "Events" parent page to enumerate every SwiNOG.', 'stgl' ); ?></td>
 					</tr>

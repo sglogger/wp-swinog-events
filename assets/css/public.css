@@ -209,6 +209,57 @@
 	content: "🎬 ";
 }
 
+/* ---------- Speaker line-up ---------- */
+
+.stgl-lineup-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: var(--stgl-gap);
+}
+
+.stgl-speaker-card {
+	display: flex;
+	gap: 1rem;
+	align-items: flex-start;
+	padding: 1.25rem;
+	background: #fff;
+	border: 1px solid var(--stgl-color-border);
+	border-radius: var(--stgl-radius);
+}
+
+.stgl-speaker-avatar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	width: 3.25rem;
+	height: 3.25rem;
+	border-radius: 50%;
+	background: var(--stgl-color-bg-tier);
+	color: var(--stgl-color-accent);
+	font-weight: 600;
+	font-size: 1.05rem;
+}
+
+.stgl-speaker-name {
+	font-weight: 600;
+}
+
+.stgl-speaker-company {
+	font-size: 0.85em;
+	color: var(--stgl-color-muted);
+}
+
+.stgl-speaker-talk {
+	margin: 0.5em 0 0;
+	font-size: 0.9em;
+}
+
+.stgl-admin-note {
+	margin-top: 0.5em;
+	font-size: 0.85em;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 600px) {

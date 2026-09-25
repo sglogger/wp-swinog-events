@@ -130,6 +130,34 @@ final class Cfp_Client {
 	}
 
 	/**
+	 * Find a CFP event by its slug (e.g. "swinog-42"), any status.
+	 *
+	 * @return array<string, mixed>|\WP_Error
+	 */
+	public function event_by_slug( string $slug ) {
+		$events = $this->events();
+		if ( is_wp_error( $events ) ) {
+			return $events;
+		}
+		foreach ( $events as $event ) {
+			if ( (string) ( $event['slug'] ?? '' ) === $slug ) {
+				return $event;
+			}
+		}
+		/* translators: %s: CFP event slug */
+		return new \WP_Error( 'stgl_cfp_no_event', sprintf( __( 'The CFP tool has no event with the slug "%s".', 'stgl' ), $slug ) );
+	}
+
+	/**
+	 * Submissions assigned to an event. Needs an accepted API key.
+	 *
+	 * @return array<int, array<string, mixed>>|\WP_Error
+	 */
+	public function submissions( string $event_id ) {
+		return $this->get( '/admin/submissions?event_id=' . rawurlencode( $event_id ) . '&unassigned=false', true );
+	}
+
+	/**
 	 * All slots of an event, including presenter contact data and consents.
 	 * Needs an accepted API key.
 	 *

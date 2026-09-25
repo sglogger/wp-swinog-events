@@ -8,6 +8,7 @@
  *   [swinog_event               event="swinog-NN"]  – event listing (was buggy in v0.x)
  *   [stgl_list_presentations event="swinog-NN"]     – legacy alias for backwards compatibility
  *
+ *   [swinog_list_speaker_lineup event="swinog-NN"] – speaker cards pulled live from the CFP tool (CFP event slug)
  *   [swinog_cfp]                                   – CFP banner if a CFP is currently open
  *   [swinog_list_all_events]                       – list all event pages (child pages of the current page)
  *
@@ -31,6 +32,152 @@ final class Shortcodes {
 		add_shortcode( 'swinog_sponsor',            [ $this, 'sponsors' ] );
 		add_shortcode( 'swinog_list_all_events',    [ $this, 'list_all_events' ] );
 		add_shortcode( 'stgl_childpages',    		[ $this, 'list_all_events' ] );
+		add_shortcode( 'swinog_list_speaker_lineup', [ $this, 'speaker_lineup' ] );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  [swinog_list_speaker_lineup] – confirmed speakers from the CFP    */
+	/*  tool. "event" is the CFP event slug, not the event category.      */
+	/* ------------------------------------------------------------------ */
+
+	/** Submission statuses that count as "on the line-up". */
+	private const LINEUP_STATUSES = [ 'accepted', 'needs_changes', 'scheduled', 'presented' ];
+
+	private const LINEUP_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
+
+	public function speaker_lineup( $atts ): string {
+		$atts = shortcode_atts( [
+			'event' => '',
+			'title' => '',
+		], (array) $atts, 'swinog_list_speaker_lineup' );
+
+		$slug = sanitize_title( (string) $atts['event'] );
+		if ( '' === $slug ) {
+			return '';
+		}
+
+		$speakers = self::lineup_speakers( $slug );
+
+		ob_start();
+		?>
+		<section class="stgl-block stgl-lineup">
+			<?php if ( '' !== (string) $atts['title'] ) : ?>
+				<h2 class="stgl-block-title"><?php echo esc_html( (string) $atts['title'] ); ?></h2>
+			<?php endif; ?>
+
+			<?php if ( is_wp_error( $speakers ) || [] === $speakers ) : ?>
+				<p class="stgl-empty"><?php esc_html_e( 'The speaker line-up will be announced soon.', 'stgl' ); ?></p>
+				<?php if ( is_wp_error( $speakers ) && current_user_can( 'manage_options' ) ) : ?>
+					<p class="stgl-empty stgl-admin-note"><?php echo esc_html( $speakers->get_error_message() ); ?></p>
+				<?php endif; ?>
+			<?php else : ?>
+				<div class="stgl-lineup-grid">
+					<?php foreach ( $speakers as $speaker ) : ?>
+						<article class="stgl-speaker-card">
+							<div class="stgl-speaker-avatar" aria-hidden="true"><?php echo esc_html( $speaker['initials'] ); ?></div>
+							<div class="stgl-speaker-body">
+								<div class="stgl-speaker-name"><?php echo esc_html( $speaker['name'] ); ?></div>
+								<?php if ( '' !== $speaker['company'] ) : ?>
+									<div class="stgl-speaker-company"><?php echo esc_html( $speaker['company'] ); ?></div>
+								<?php endif; ?>
+								<p class="stgl-speaker-talk"><?php echo esc_html( $speaker['title'] ); ?></p>
+							</div>
+						</article>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
+		</section>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Speakers of a CFP event, cached for 15 minutes. If the CFP tool is
+	 * unreachable the last good result (kept for a week) is served instead.
+	 *
+	 * @return array<int, array{name: string, company: string, title: string, initials: string}>|\WP_Error
+	 */
+	private static function lineup_speakers( string $slug ) {
+		$key    = 'stgl_cfp_lineup_' . md5( $slug );
+		$cached = get_transient( $key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$speakers = self::fetch_lineup_speakers( $slug );
+		if ( is_wp_error( $speakers ) ) {
+			$stale = get_transient( $key . '_stale' );
+			return is_array( $stale ) ? $stale : $speakers;
+		}
+
+		set_transient( $key, $speakers, self::LINEUP_CACHE_TTL );
+		set_transient( $key . '_stale', $speakers, WEEK_IN_SECONDS );
+		return $speakers;
+	}
+
+	/**
+	 * @return array<int, array{name: string, company: string, title: string, initials: string}>|\WP_Error
+	 */
+	private static function fetch_lineup_speakers( string $slug ) {
+		$client = new Cfp_Client();
+		$event  = $client->event_by_slug( $slug );
+		if ( is_wp_error( $event ) ) {
+			return $event;
+		}
+
+		$submissions = $client->submissions( (string) $event['id'] );
+		if ( is_wp_error( $submissions ) ) {
+			return $submissions;
+		}
+
+		$speakers = [];
+		foreach ( $submissions as $sub ) {
+			if ( ! is_array( $sub ) || ! in_array( (string) ( $sub['status'] ?? '' ), self::LINEUP_STATUSES, true ) ) {
+				continue;
+			}
+
+			// The admin submission carries first/last name + organization; accept
+			// the slot-style presenter_* fields as well.
+			$first = trim( (string) ( $sub['first_name'] ?? '' ) );
+			$last  = trim( (string) ( $sub['last_name'] ?? '' ) );
+			$name  = trim( (string) ( $sub['presenter_name'] ?? '' ) );
+			if ( '' === $name ) {
+				$name = trim( $first . ' ' . $last );
+			}
+			if ( '' === $name ) {
+				continue;
+			}
+
+			$company = trim( (string) ( $sub['presenter_organization'] ?? '' ) );
+			if ( '' === $company ) {
+				$company = trim( (string) ( $sub['organization'] ?? '' ) );
+			}
+
+			$speakers[] = [
+				'name'     => sanitize_text_field( $name ),
+				'company'  => sanitize_text_field( $company ),
+				'title'    => sanitize_text_field( (string) ( $sub['title'] ?? '' ) ),
+				'initials' => self::initials( '' !== $first ? $first . ' ' . $last : $name ),
+				'sort'     => remove_accents( mb_strtolower( '' !== $last ? $last . ' ' . $first : $name ) ),
+			];
+		}
+
+		usort( $speakers, static fn( $a, $b ) => strcmp( $a['sort'], $b['sort'] ) );
+
+		return array_map( static function ( array $speaker ): array {
+			unset( $speaker['sort'] );
+			return $speaker;
+		}, $speakers );
+	}
+
+	/**
+	 * "Remi Locherer" → "RL", "Alice" → "A".
+	 */
+	private static function initials( string $name ): string {
+		$parts = preg_split( '/\s+/u', trim( $name ) ) ?: [];
+		$first = (string) reset( $parts );
+		$last  = count( $parts ) > 1 ? (string) end( $parts ) : '';
+		return mb_strtoupper( mb_substr( $first, 0, 1 ) . mb_substr( $last, 0, 1 ) );
 	}
 
 	/* ------------------------------------------------------------------ */

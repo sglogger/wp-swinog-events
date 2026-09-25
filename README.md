@@ -7,7 +7,7 @@ pages that embed the agenda / presentation / sponsor shortcodes; events
 themselves are organised via the `stgl_presentation_cat` taxonomy (one term
 per SwiNOG, e.g. `swinog-41`).
 
-* **Version:** 1.1.0
+* **Version:** 1.2.0
 * **Requires WordPress:** 6.0+
 * **Requires PHP:** 7.4+
 * **License:** GPL-2.0-or-later
@@ -78,6 +78,7 @@ Each shortcode filters by the `stgl_presentation_cat` taxonomy slug
 | `[swinog_list_agenda event="swinog-41"]` | Agenda with time slot and talk abstract, no slide/video links. |
 | `[swinog_sponsor event="swinog-41" layout="tiers"]` | Sponsor grid grouped by level (use `layout="list"` for a flat grid). |
 | `[swinog_list_all_events]` | Lists all event pages — i.e. the child pages of the current page. Drop on the parent "Events" page to auto-enumerate every SwiNOG. Optional `parent="<id>"` to list children of an arbitrary page. |
+| `[swinog_list_speaker_lineup event="swinog-42"]` | Speaker cards (name, company, talk title) pulled from the CFP tool. `event` is the **CFP event slug**, not the event category. Lists submissions with status `accepted`, `needs_changes`, `scheduled` or `presented`, sorted by last name. Needs the API key (see [CFP sync](#cfp-sync)); cached 15 minutes, and the last good result is shown if the CFP tool is down. Optional `title="…"`. |
 
 Optional attributes accepted by all four: `orderby`, `order`, `meta_key`,
 `posts`. The presentation/agenda shortcodes additionally accept `show_type`

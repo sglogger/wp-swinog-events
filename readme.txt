@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,13 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.2.0 =
+* Added: `[swinog_list_speaker_lineup event="swinog-42"]` – speaker cards
+  (name, company, talk title) for every CFP submission of the event with
+  status accepted, needs_changes, scheduled or presented. `event` is the CFP
+  event slug. Uses the API key from **API Settings**, caches for 15 minutes
+  and falls back to the last good result if the CFP tool is unreachable.
 
 = 1.1.0 =
 * Added: **Presentations → Settings → API Settings** tab with the CFP server

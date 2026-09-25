@@ -60,7 +60,7 @@ final class Assets {
 	}
 
 	private function content_uses_shortcode( string $content ): bool {
-		foreach ( [ 'swinog_list_presentations', 'stgl_list_presentations', 'swinog_list_agenda', 'swinog_sponsor' ] as $sc ) {
+		foreach ( [ 'swinog_list_presentations', 'stgl_list_presentations', 'swinog_list_agenda', 'swinog_sponsor', 'swinog_list_speaker_lineup' ] as $sc ) {
 			if ( has_shortcode( $content, $sc ) ) {
 				return true;
 			}
