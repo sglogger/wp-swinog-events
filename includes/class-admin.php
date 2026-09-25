@@ -190,6 +190,12 @@ final class Admin {
 			return;
 		}
 
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'api' === $tab ) {
+			$this->render_api_settings_tab();
+			return;
+		}
+
 		// Save handler.
 		if ( isset( $_POST['stgl_settings_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['stgl_settings_nonce'] ) ), 'stgl_settings_save' ) ) {
 			$weights = isset( $_POST['levels_weight'] ) ? (array) $_POST['levels_weight'] : [];
@@ -236,6 +242,7 @@ final class Admin {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'SwiNOG Events – Settings', 'stgl' ); ?></h1>
+			<?php self::render_settings_tabs( 'general' ); ?>
 
 			<form method="post">
 				<?php wp_nonce_field( 'stgl_settings_save', 'stgl_settings_nonce' ); ?>
@@ -390,6 +397,174 @@ final class Admin {
 			<p><code>[swinog_sponsor event="swinog-41" orderby="meta_value_num" meta_key="stgl_sponsor_level" order="DESC"]</code></p>
 		</div>
 		<?php
+	}
+
+	private static function render_settings_tabs( string $active ): void {
+		$base = admin_url( 'edit.php?post_type=' . Post_Types::CPT_PRESENTATION . '&page=stgl-swinog-settings' );
+		$tabs = [
+			'general' => [ __( 'General', 'stgl' ), $base ],
+			'api'     => [ __( 'API Settings', 'stgl' ), add_query_arg( 'tab', 'api', $base ) ],
+		];
+		echo '<nav class="nav-tab-wrapper" style="margin-bottom:1em">';
+		foreach ( $tabs as $key => [ $label, $url ] ) {
+			printf(
+				'<a href="%s" class="nav-tab%s">%s</a>',
+				esc_url( $url ),
+				$key === $active ? ' nav-tab-active' : '',
+				esc_html( $label )
+			);
+		}
+		echo '</nav>';
+	}
+
+	/* ------------------------------------------------------------------ */
+	/*  Settings page – API tab                                           */
+	/* ------------------------------------------------------------------ */
+
+	private function render_api_settings_tab(): void {
+		$notices = [];
+
+		if ( isset( $_POST['stgl_cfp_api_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['stgl_cfp_api_nonce'] ) ), 'stgl_cfp_api_save' ) ) {
+			$current = Cfp_Client::settings();
+
+			$server = Cfp_Client::normalize_server( (string) wp_unslash( $_POST['cfp_server'] ?? '' ) );
+
+			// The key is never echoed back; an empty field keeps the stored one.
+			$api_key = sanitize_text_field( wp_unslash( $_POST['cfp_api_key'] ?? '' ) );
+			if ( '' === $api_key && empty( $_POST['cfp_api_key_clear'] ) ) {
+				$api_key = $current['api_key'];
+			}
+
+			$types    = Installer::presentation_types();
+			$posted   = isset( $_POST['cfp_type_map'] ) ? (array) wp_unslash( $_POST['cfp_type_map'] ) : [];
+			$type_map = [];
+			foreach ( Cfp_Client::SLOT_TYPES as $slot_type ) {
+				$slug                   = sanitize_key( (string) ( $posted[ $slot_type ] ?? '' ) );
+				$type_map[ $slot_type ] = isset( $types[ $slug ] ) ? $slug : '';
+			}
+
+			update_option( Installer::OPTION_CFP_API, [
+				'server'   => $server,
+				'api_key'  => $api_key,
+				'type_map' => $type_map,
+			], false );
+			$notices[] = [ 'success', __( 'API settings saved.', 'stgl' ) ];
+
+			if ( ! empty( $_POST['stgl_cfp_test'] ) ) {
+				$notices = array_merge( $notices, self::test_cfp_connection() );
+			}
+		}
+
+		$settings = Cfp_Client::settings();
+		$types    = Installer::presentation_types();
+		$default  = Installer::default_presentation_type();
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'SwiNOG Events – Settings', 'stgl' ); ?></h1>
+			<?php self::render_settings_tabs( 'api' ); ?>
+
+			<?php foreach ( $notices as [ $level, $message ] ) : ?>
+				<div class="notice notice-<?php echo esc_attr( $level ); ?> is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
+			<?php endforeach; ?>
+
+			<form method="post">
+				<?php wp_nonce_field( 'stgl_cfp_api_save', 'stgl_cfp_api_nonce' ); ?>
+
+				<h2><?php esc_html_e( 'CFP server', 'stgl' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Used by the CFP Sync Tool to import the agenda from the SwiNOG CFP tool.', 'stgl' ); ?></p>
+
+				<table class="form-table">
+					<tbody>
+					<tr>
+						<th><label for="cfp_server"><?php esc_html_e( 'CFP server URL', 'stgl' ); ?></label></th>
+						<td>
+							<input type="url" id="cfp_server" name="cfp_server" value="<?php echo esc_attr( $settings['server'] ); ?>" class="regular-text" placeholder="<?php echo esc_attr( Cfp_Client::DEFAULT_SERVER ); ?>" />
+							<p class="description"><?php esc_html_e( 'Base URL of the CFP tool, e.g. https://cfp.swinog.ch (a trailing /api or /api/v1 is stripped).', 'stgl' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="cfp_api_key"><?php esc_html_e( 'API key', 'stgl' ); ?></label></th>
+						<td>
+							<input type="password" id="cfp_api_key" name="cfp_api_key" value="" class="regular-text" autocomplete="new-password"
+								placeholder="<?php echo esc_attr( '' !== $settings['api_key'] ? __( '•••••••• (stored – leave empty to keep)', 'stgl' ) : 'swcfp_…' ); ?>" />
+							<?php if ( '' !== $settings['api_key'] ) : ?>
+								<label style="margin-left:.5em"><input type="checkbox" name="cfp_api_key_clear" value="1" /> <?php esc_html_e( 'Remove stored key', 'stgl' ); ?></label>
+							<?php endif; ?>
+							<p class="description"><?php esc_html_e( 'Sent as "Authorization: Bearer …". Needed for the admin slot list, which carries presenter e-mail, consents and video URL.', 'stgl' ); ?></p>
+						</td>
+					</tr>
+					</tbody>
+				</table>
+
+				<h2><?php esc_html_e( 'Slot type mapping', 'stgl' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'Which presentation type an imported CFP slot gets, by its slot_type.', 'stgl' ); ?></p>
+
+				<table class="widefat striped" style="max-width:600px">
+					<thead>
+						<tr>
+							<th style="width:200px"><?php esc_html_e( 'CFP slot_type', 'stgl' ); ?></th>
+							<th><?php esc_html_e( 'Presentation type', 'stgl' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+					<?php foreach ( Cfp_Client::SLOT_TYPES as $slot_type ) : ?>
+						<tr>
+							<td><code><?php echo esc_html( $slot_type ); ?></code></td>
+							<td>
+								<select name="cfp_type_map[<?php echo esc_attr( $slot_type ); ?>]">
+									<option value=""<?php selected( ! isset( $types[ $settings['type_map'][ $slot_type ] ] ) ); ?>>
+										<?php
+										/* translators: %s: label of the default agenda entry type */
+										printf( esc_html__( '— default (%s) —', 'stgl' ), esc_html( (string) ( $types[ $default ] ?? $default ) ) );
+										?>
+									</option>
+									<?php foreach ( $types as $slug => $label ) : ?>
+										<option value="<?php echo esc_attr( (string) $slug ); ?>" <?php selected( $settings['type_map'][ $slot_type ], (string) $slug ); ?>><?php echo esc_html( (string) $label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<p class="submit">
+					<?php submit_button( __( 'Save Changes', 'stgl' ), 'primary', 'submit', false ); ?>
+					<?php submit_button( __( 'Save & test connection', 'stgl' ), 'secondary', 'stgl_cfp_test', false ); ?>
+				</p>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @return array<int, array{0: string, 1: string}> Notices as [level, message].
+	 */
+	private static function test_cfp_connection(): array {
+		$client  = new Cfp_Client();
+		$version = $client->version();
+		if ( is_wp_error( $version ) ) {
+			return [ [ 'error', $version->get_error_message() ] ];
+		}
+
+		$notices = [ [
+			'success',
+			/* translators: %s: CFP tool version */
+			sprintf( __( 'CFP server reachable (version %s).', 'stgl' ), (string) ( $version['version'] ?? '?' ) ),
+		] ];
+
+		$events = $client->events();
+		if ( is_wp_error( $events ) || [] === $events ) {
+			$notices[] = [ 'warning', is_wp_error( $events ) ? $events->get_error_message() : __( 'The CFP server lists no events.', 'stgl' ) ];
+			return $notices;
+		}
+
+		$slots     = $client->slots( (string) $events[0]['id'] );
+		$notices[] = is_wp_error( $slots )
+			? [ 'error', $slots->get_error_message() ]
+			: [ 'success', __( 'API key accepted – slot data can be read.', 'stgl' ) ];
+
+		return $notices;
 	}
 
 	/**

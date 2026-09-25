@@ -7,7 +7,7 @@ pages that embed the agenda / presentation / sponsor shortcodes; events
 themselves are organised via the `stgl_presentation_cat` taxonomy (one term
 per SwiNOG, e.g. `swinog-41`).
 
-* **Version:** 1.0.10
+* **Version:** 1.1.0
 * **Requires WordPress:** 6.0+
 * **Requires PHP:** 7.4+
 * **License:** GPL-2.0-or-later
@@ -124,11 +124,65 @@ These are **additive** – they default to empty for legacy posts.
 * `stgl_presenter_type` – agenda entry type slug; empty means "default"
   (`talk`).
 
+## CFP sync
+
+The agenda can be imported from the SwiNOG CFP tool
+(<https://cfp.swinog.ch>).
+
+**Presentations → Settings → API Settings**
+
+* **CFP server URL** – e.g. `https://cfp.swinog.ch` (a trailing `/api` or
+  `/api/v1` is stripped).
+* **API key** – sent as `Authorization: Bearer …`. It is required, because
+  only the admin slot list (`/api/v1/admin/events/{id}/slots`) carries
+  presenter e-mail, consents and video URL. The stored key is never shown
+  again; leave the field empty to keep it.
+* **Slot type mapping** – the presentation type each CFP `slot_type` gets.
+  Defaults: presentation → Talk, break → Break, social → Social,
+  housekeeping/custom → Other.
+
+**Presentations → CFP Sync Tool**
+
+1. Pick the CFP event.
+2. Map every event day to an event category. A two-day event such as
+   SwiNOG-42 (2026-10-20 to 2026-10-21) has day 1 → `SwiNOG #42-1` and
+   day 2 → `SwiNOG #42-2`; a one-day event maps to e.g. `SwiNOG #41`. These
+   are guessed from the names and remembered per event
+   (`stgl_swinog_cfp_event_map`). Days set to "skip" are left alone.
+3. The dry run lists, per day, the presentations that go to the trash
+   (entries with an attached slide file are flagged – files are not carried
+   over) and the slots that get imported.
+4. Tick the confirmation and import. If a mapped category changed after the
+   dry run, nothing is done and the dry run has to be repeated.
+
+Field mapping:
+
+| Presentation field | CFP slot field |
+|---|---|
+| Title | `title` |
+| Text | `abstract` |
+| Type | `slot_type` (via the mapping) |
+| Presenter name | `presenter_name` |
+| Company | `presenter_organization` |
+| Presenter e-mail | `presenter_email` |
+| Publish presentation | `consent_publish_presentation` |
+| Video URL | `video_url` |
+| Publish video | `consent_publish_videos` |
+| Schedule | time of `starts_at` |
+| Length (minutes) | `duration_minutes` |
+| Speaker bio | left empty |
+| Event category | day mapping |
+
+Imported entries are published immediately and keep the CFP slot and
+submission id in `_stgl_cfp_slot_id` / `_stgl_cfp_submission_id`. Sponsors
+share the event taxonomy but are never deleted by the sync.
+
 ## Settings
 
 **Presentations → Settings** – add, rename or remove sponsor tiers and
 presentation types, and find the full shortcode help (attribute reference +
-worked examples). Existing tiers and types are preserved.
+worked examples). Existing tiers and types are preserved. The **API
+Settings** tab holds the CFP connection (see [CFP sync](#cfp-sync)).
 
 ## Updates
 

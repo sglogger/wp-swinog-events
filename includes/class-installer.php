@@ -23,6 +23,8 @@ final class Installer {
 	public const OPTION_DATA_VERSION       = 'stgl_swinog_data_version';
 	public const OPTION_SPONSOR_LEVELS     = 'stgl_swinog_sponsor_levels';
 	public const OPTION_PRESENTATION_TYPES = 'stgl_swinog_presentation_types';
+	public const OPTION_CFP_API            = 'stgl_swinog_cfp_api';
+	public const OPTION_CFP_EVENT_MAP      = 'stgl_swinog_cfp_event_map';
 
 	/**
 	 * Slug used when a presentation carries no explicit type. Presentations are
@@ -238,6 +240,8 @@ final class Installer {
 			self::OPTION_DATA_VERSION,
 			self::OPTION_SPONSOR_LEVELS,
 			self::OPTION_PRESENTATION_TYPES,
+			self::OPTION_CFP_API,
+			self::OPTION_CFP_EVENT_MAP,
 			'stgl_swinog_event_status', // legacy
 			'stgl_swinog_agenda_type',  // legacy
 			'stgl_swinog_event_levels', // legacy

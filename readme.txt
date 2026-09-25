@@ -4,7 +4,7 @@ Tags: events, agenda, sponsors, presentations, ical, rest-api
 Requires at least: 6.0
 Tested up to: 6.5
 Requires PHP: 7.4
-Stable tag: 1.0.10
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,8 @@ SwiNOG Events is a complete rewrite of the legacy `swinog_events` plugin (0.x). 
 * Editable sponsor tiers from a dedicated Settings page.
 * Agenda entry types (Talk, Break, Keynote, Transportation, Social, Other) –
   editable list, overwritable per presentation, shown as a Type column.
+* CFP Sync Tool: imports the agenda of an event from the SwiNOG CFP tool,
+  one event category per event day, with a dry run before anything changes.
 * Modern Media Library picker for slide / video file uploads.
 * PHP 7.4+ codebase with strict types, namespaced classes, escaped output.
 
@@ -68,6 +70,20 @@ folder will keep working if you reactivate it, although new fields and
 the Settings page will not be available there.
 
 == Changelog ==
+
+= 1.1.0 =
+* Added: **Presentations → Settings → API Settings** tab with the CFP server
+  URL, an API key (sent as `Authorization: Bearer …`) and a mapping from CFP
+  `slot_type` (presentation, break, social, housekeeping, custom) to
+  presentation types. "Save & test connection" checks the server and key.
+* Added: **Presentations → CFP Sync Tool**. Pick a CFP event, map each event
+  day to an event category (e.g. day 2 of SwiNOG-42 → "SwiNOG #42-2"; guessed
+  automatically from the names), review a dry run table and confirm. All
+  presentations of the mapped categories go to the trash and are replaced by
+  the CFP slots. Sponsors are never touched.
+* The import refuses to run if a mapped category changed after the dry run.
+* Imported presentations store the CFP slot and submission id in
+  `_stgl_cfp_slot_id` / `_stgl_cfp_submission_id`.
 
 = 1.0.10 =
 * Added: agenda entry types. Every presentation now carries a type
@@ -161,6 +177,10 @@ the Settings page will not be available there.
 * Removed unused `{prefix}swinog_events` database table.
 
 == Upgrade Notice ==
+
+= 1.1.0 =
+Adds the CFP Sync Tool and API settings for importing the agenda from the
+SwiNOG CFP tool. Nothing changes until you run a sync and confirm the dry run.
 
 = 1.0.10 =
 Adds classifiable agenda entries (Talk, Break, Keynote, Transportation,

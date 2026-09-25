@@ -61,6 +61,9 @@ final class Plugin {
 		$this->components['admin'] = new Admin();
 		$this->components['admin']->register();
 
+		$this->components['cfp_sync'] = new Cfp_Sync();
+		$this->components['cfp_sync']->register();
+
 		$this->components['shortcodes'] = new Shortcodes();
 		$this->components['shortcodes']->register();
 
